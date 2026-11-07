@@ -27,6 +27,19 @@ dist/
 *.exe
 *.res
 node_modules/
+src-tauri/target/
+
+# Logs & Environment
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+.env
+.env.local
+*.env
+
+# macOS & Linux system files
+.DS_Store
+._*
 
 # Editor & Agent directories
 .vscode/

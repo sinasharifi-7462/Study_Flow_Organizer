@@ -1,9 +1,9 @@
 {
-  "$schema": "StudyFlowOrganizer_v3",
+  "$schema": "StudyFlowOrganizer_v4",
   "metadata": {
-    "version": "3.1.0",
+    "version": "4.2.0",
     "appName": "Study Flow Organizer",
-    "lastSaved": "2026-11-04T12:00:00.000Z",
+    "lastSaved": "2026-11-07T12:00:00.000Z",
     "language": "en"
   },
   "user": {

@@ -1,9 +1,9 @@
 {
   "$schema": "StudyFlowOrganizer_v4",
   "metadata": {
-    "version": "4.0.0",
+    "version": "4.2.0",
     "appName": "Study Flow Organizer",
-    "lastSaved": "2026-11-05T11:56:56.994Z",
+    "lastSaved": "2026-11-07T12:00:00.000Z",
     "language": "en"
   },
   "user": {
@@ -77,53 +77,7 @@
       }
     ]
   },
-  "subjects": [
-    {
-      "id": "subj_1793879363212_oa55",
-      "title": "Fluid Mechanics",
-      "code": "",
-      "gradientIndex": 0,
-      "createdAt": "2026-11-05T11:49:23.212Z"
-    },
-    {
-      "id": "subj_1793879816965_8np6",
-      "title": "Mechanical Vibrations",
-      "code": "",
-      "gradientIndex": 0,
-      "createdAt": "2026-11-05T11:56:56.965Z"
-    }
-  ],
-  "items": [
-    {
-      "id": "item_1793879621570_cdkb",
-      "kind": "task",
-      "typeId": "tt_hw",
-      "typeName": "HW",
-      "typeIcon": "📚",
-      "subjectId": "subj_1793879363212_oa55",
-      "title": "HW #1",
-      "extraInfo": {
-        "number": "1",
-        "location": "",
-        "notes": ""
-      },
-      "dueDate": "2026-11-28T20:29:00.000Z",
-      "completed": false,
-      "createdAt": "2026-11-05T11:51:35.505Z"
-    }
-  ],
-  "materials": [
-    {
-      "id": "mat_1793879621570_65o9",
-      "subjectId": "subj_1793879363212_oa55",
-      "itemId": "",
-      "name": "Fluid Mechanics II",
-      "filePath": "D:\\Personal Files\\Semester 5\\Fluid Mechanics II",
-      "typeId": "mat_folder",
-      "typeName": "Course Folder",
-      "icon": "📁",
-      "notes": "",
-      "createdAt": "2026-11-05T11:53:12.330Z"
-    }
-  ]
+  "subjects": [],
+  "items": [],
+  "materials": []
 }

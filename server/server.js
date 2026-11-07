@@ -1,5 +1,5 @@
 /**
- * Study Flow Organizer - Local API & Static Server (v4.1)
+ * Study Flow Organizer - Local API & Static Server (v4.2)
  * 
  * Provides:
  * 1. Zero-dependency static file server for app/
@@ -177,7 +177,7 @@ function loadDatabase() {
     return {
         $schema: "StudyFlowOrganizer_v4",
         metadata: {
-            version: "4.1.0",
+            version: "4.2.0",
             appName: "Study Flow Organizer",
             lastSaved: new Date().toISOString(),
             language: "en"

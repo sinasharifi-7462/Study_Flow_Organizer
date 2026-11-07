@@ -1,6 +1,6 @@
 [package]
 name = "study-flow-organizer"
-version = "4.1.0"
+version = "4.2.0"
 description = "Smart Academic Deadlines, Schedule & Course Folders Hub"
 authors = ["Study Flow Team"]
 license = "MIT"

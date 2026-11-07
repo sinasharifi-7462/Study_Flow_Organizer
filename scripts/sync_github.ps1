@@ -12,6 +12,7 @@ $personalFile = Join-Path $dataDir "study_flow_data.personal.json"
 
 function Get-RemoteUrl {
     $remote = git remote get-url origin 2>$null
+    if (-not $remote) { $remote = git remote get-url fork 2>$null }
     if (-not $remote) { return "origin not configured" }
     return $remote
 }

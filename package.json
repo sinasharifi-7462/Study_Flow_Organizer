@@ -1,23 +1,27 @@
 {
   "name": "study-flow-organizer",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "Smart Academic Schedule, Folders Hub & Task Organizer",
   "main": "server/server.js",
   "scripts": {
     "start": "node desktop/launcher.js",
     "server": "node server/server.js",
     "build:exe": "node scripts/build_standalone_exe.js",
-    "build:launcher": "gcc -mwindows -O2 scripts/launcher.c -o Study_Flow_Organizer.exe"
+    "build:launcher": "gcc -mwindows -O2 scripts/launcher.c -o Study_Flow_Organizer.exe -lws2_32",
+    "build:tauri": "cargo tauri build"
   },
   "keywords": [
     "academic",
     "organizer",
     "planner",
     "kanban",
+    "timeline",
     "shamsi",
     "jalali",
+    "ai-assistant",
+    "voice-notes",
     "desktop-app"
   ],
-  "author": "Amirali Navidi",
+  "author": "Amirali Navidi & Sina Sharifi",
   "license": "MIT"
 }
