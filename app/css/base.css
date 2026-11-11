@@ -1,8 +1,6 @@
 /* ==========================================================================
    RESET & GLOBAL BASE STYLES
-   5-Color Master Palette System:
-   #283D3B (Dark Slate), #197278 (Stormy Teal), #EDDDD4 (Powder Petal),
-   #C44536 (Tomato Jam), #772E25 (Chestnut)
+   Synced with Rigid Theme Custom Properties (Zero Hardcoded Colors)
    ========================================================================== */
 *, *::before, *::after {
     box-sizing: border-box;
@@ -14,9 +12,9 @@
 body {
     background-color: var(--bg-canvas);
     background-image: 
-        radial-gradient(circle at 12% 18%, rgba(25, 114, 120, 0.28) 0%, transparent 45%),
-        radial-gradient(circle at 88% 85%, rgba(119, 46, 37, 0.22) 0%, transparent 50%),
-        radial-gradient(circle at 50% 50%, rgba(40, 61, 59, 0.95) 0%, var(--bg-canvas-deep) 100%);
+        radial-gradient(circle at 12% 18%, var(--color-primary-subtle) 0%, transparent 45%),
+        radial-gradient(circle at 88% 85%, var(--color-secondary-subtle) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, var(--card-surface-glass) 0%, var(--bg-canvas-deep) 100%);
     background-attachment: fixed;
     color: var(--text-primary);
     min-height: 100vh;
@@ -32,14 +30,14 @@ body {
     height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: rgba(30, 46, 44, 0.85);
+    background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-    background: var(--palette-stormy-teal);
+    background: var(--scrollbar-thumb);
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #228b93;
+    background: var(--scrollbar-thumb-hover);
 }
 
 /* Utilities */
@@ -53,6 +51,19 @@ button { cursor: pointer; }
 
 .hidden { display: none !important; }
 
+/* Tabular Numerals for Countdowns, Timers & Statistics (Zero Jitter) */
+.stat-value,
+.compact-urgency-badge,
+.timeline-now-pill,
+.calendar-day-cell,
+.progress-label-text,
+.card-task-count-badge,
+.kanban-count-pill,
+.date-preset-chip {
+    font-feature-settings: "tnum" 1;
+    font-variant-numeric: tabular-nums;
+}
+
 /* Glassmorphic Container Card */
 .glass-panel {
     background: var(--card-surface-glass);
@@ -60,7 +71,7 @@ button { cursor: pointer; }
     -webkit-backdrop-filter: blur(18px);
     border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.40);
+    box-shadow: var(--shadow-md);
 }
 
 /* Buttons */
@@ -85,38 +96,40 @@ button { cursor: pointer; }
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, var(--palette-stormy-teal), #228b93);
-    color: var(--palette-powder-petal);
-    box-shadow: 0 4px 15px var(--color-primary-glow);
-    border: 1px solid rgba(237, 221, 212, 0.22);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    box-shadow: var(--btn-primary-shadow);
+    border: 1px solid var(--btn-primary-border);
 }
 
 .btn-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px var(--color-primary-glow);
-    background: linear-gradient(135deg, #1b7e85, #299fa8);
+    background: var(--btn-primary-hover);
 }
 
 .btn-secondary {
-    background: rgba(40, 61, 59, 0.85);
-    color: var(--palette-powder-petal);
-    border: 1px solid var(--card-border);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
 }
 
 .btn-secondary:hover {
-    background: rgba(46, 70, 68, 0.95);
-    border-color: var(--palette-stormy-teal);
-    color: #ffffff;
+    background: var(--btn-secondary-hover);
+    border-color: var(--card-border-hover);
+    color: var(--text-primary);
 }
 
 .btn-del {
-    color: var(--palette-tomato-jam) !important;
-    border-color: rgba(196, 69, 54, 0.4) !important;
+    color: var(--btn-del-color) !important;
+    border-color: var(--btn-del-border) !important;
+    background: transparent;
 }
 
 .btn-del:hover {
-    background: rgba(196, 69, 54, 0.2) !important;
-    border-color: var(--palette-tomato-jam) !important;
+    background: var(--btn-del-bg-hover) !important;
+    border-color: var(--color-urgent) !important;
+    color: var(--color-on-urgent) !important;
 }
 
 .btn-sm {
@@ -131,12 +144,13 @@ button { cursor: pointer; }
 }
 
 .btn-outline-cyan {
-    background: rgba(25, 114, 120, 0.15);
-    border: 1px solid rgba(25, 114, 120, 0.45);
-    color: var(--palette-powder-petal);
+    background: var(--color-primary-subtle);
+    border: 1px solid var(--color-primary-subtle-border);
+    color: var(--color-primary-subtle-text);
 }
 
 .btn-outline-cyan:hover {
-    background: rgba(25, 114, 120, 0.3);
-    border-color: var(--palette-stormy-teal);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
 }

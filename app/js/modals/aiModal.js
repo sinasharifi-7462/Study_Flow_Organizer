@@ -1,3 +1,5 @@
+import { mountModalHtml } from './modalMount.js';
+import { AI_MODAL_HTML } from './modalTemplates.js';
 /**
  * Study Flow Organizer - Smart AI Schedule Assistant
  * Ultra-minimalist Voice & Text Schedule Coordinator.
@@ -38,6 +40,7 @@ let currentProposedActions = [];
  * Resets state clean as new, and exposes Last Changes / Undo if a prior session exists.
  */
 export function openAiModal() {
+    mountModalHtml('aiModal', AI_MODAL_HTML);
     const modal = document.getElementById('aiModal');
     if (!modal) return;
 
@@ -122,7 +125,7 @@ function updateAiContextDisplay() {
     if (coursesEl) {
         const count = AppState.subjects ? AppState.subjects.length : 0;
         coursesEl.textContent = `${count} course${count === 1 ? '' : 's'}`;
-        coursesEl.style.color = count > 0 ? 'var(--palette-powder-petal)' : 'var(--text-muted)';
+        coursesEl.style.color = count > 0 ? 'var(--text-primary)' : 'var(--text-muted)';
     }
 }
 
@@ -1024,16 +1027,17 @@ function showToastNotification(msg) {
  * Wire up all AI Modal UI Events
  */
 export function initAiModalEvents() {
+    mountModalHtml('aiModal', AI_MODAL_HTML);
     // Note: btnOpenAiModal is managed by quickAiVoice.js (tap to open, hold to speak, click to undo)
 
     // Close triggers
     document.getElementById('aiModalCloseBtn')?.addEventListener('click', closeAiModal);
     document.getElementById('btnAiClose')?.addEventListener('click', closeAiModal);
 
-    // Active model badge in header opens Settings to configure
+    // Active model badge in header opens Settings to configure (AI Assistant tab)
     document.getElementById('aiActiveModelBadge')?.addEventListener('click', () => {
         closeAiModal();
-        openBackupModal();
+        openBackupModal('ai');
     });
 
     // History buttons: Preview Last Changes & Undo

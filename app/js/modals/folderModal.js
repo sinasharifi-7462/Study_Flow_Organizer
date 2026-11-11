@@ -1,3 +1,5 @@
+import { mountModalHtml } from './modalMount.js';
+import { FOLDER_MODAL_HTML } from './modalTemplates.js';
 /**
  * Course Folder Linking & Windows Explorer Modal Controller
  * Featuring Custom Styled Subject Dropdown
@@ -6,16 +8,18 @@
 import { AppState, addOrUpdateMaterial, deleteMaterial } from '../state.js';
 import { pickFolder } from '../api.js';
 import { CustomSelect } from '../components/customSelect.js';
+import { showToast } from '../toast.js';
 
 let activeMaterialId = null;
 let folderSubjectSelect = null;
 
 export function openFolderModal(materialId = null, preselectedSubjectId = null) {
+    mountModalHtml('folderModal', FOLDER_MODAL_HTML);
     const modal = document.getElementById('folderModal');
     if (!modal) return;
 
     if (AppState.subjects.length === 0) {
-        alert("Please create a course subject before linking course folders.");
+        showToast({ message: "Please create a course subject before linking course folders.", type: 'warning' });
         return;
     }
 
@@ -65,6 +69,7 @@ export function closeFolderModal() {
 }
 
 export function initFolderModalEvents() {
+    mountModalHtml('folderModal', FOLDER_MODAL_HTML);
     // Initialize Custom Subject Dropdown
     const subjectWrap = document.getElementById('folderSubjectSelectWrap');
     if (subjectWrap) {
@@ -97,10 +102,10 @@ export function initFolderModalEvents() {
                     nameInput.value = result.name || 'Course Folder';
                 }
             } else if (!result.cancelled && result.error) {
-                alert(result.error);
+                showToast({ message: result.error, type: 'error' });
             }
         } catch (e) {
-            alert('Folder picker error: ' + e.message);
+            showToast({ message: 'Folder picker error: ' + e.message, type: 'error' });
         } finally {
             btn.textContent = origText;
             btn.disabled = false;
@@ -137,12 +142,12 @@ export function initFolderModalEvents() {
         const notes = document.getElementById('folderNotesInput').value.trim();
 
         if (!subjectId) {
-            alert('Please select a course subject');
+            showToast({ message: 'Please select a course subject', type: 'error' });
             return;
         }
 
         if (!name || !filePath) {
-            alert('Folder label and path are required');
+            showToast({ message: 'Folder label and path are required', type: 'error' });
             return;
         }
 

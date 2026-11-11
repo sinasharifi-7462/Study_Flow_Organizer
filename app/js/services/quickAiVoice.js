@@ -29,8 +29,8 @@ const AI_LISTENING_ICON_HTML = `
 // Processing Spinner Icon HTML
 const AI_PROCESSING_ICON_HTML = `
     <svg viewBox="0 0 24 24" class="ai-spin-icon" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="12" cy="12" r="9" stroke="rgba(237,221,212,0.2)"/>
-        <path d="M12 3a9 9 0 0 1 9 9" stroke="#2dd4bf" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="9" stroke="var(--card-border-subtle)"/>
+        <path d="M12 3a9 9 0 0 1 9 9" stroke="var(--color-primary)" stroke-linecap="round"/>
     </svg>
 `;
 
@@ -190,7 +190,7 @@ async function startQuickRecording() {
                 const scale = 1 + norm * 0.45;
                 const glow = 14 + norm * 26;
                 btn.style.transform = `scale(${scale.toFixed(3)})`;
-                btn.style.boxShadow = `0 0 ${glow.toFixed(1)}px rgba(45, 212, 191, ${0.5 + norm * 0.5})`;
+                btn.style.boxShadow = `0 0 ${glow.toFixed(1)}px var(--color-primary-glow)`;
             }
 
             animFrameId = requestAnimationFrame(trackAmplitude);

@@ -1,126 +1,211 @@
 /* ==========================================================================
-   DESIGN SYSTEM & COLOR THEME VARIABLES
-   Strict 5-Color Master Palette:
-     1. #283D3B - Dark Slate Grey
-     2. #197278 - Stormy Teal
-     3. #EDDDD4 - Powder Petal
-     4. #C44536 - Tomato Jam
-     5. #772E25 - Chestnut
+   DESIGN SYSTEM & RIGID CENTRAL COLOR ARCHITECTURE
+   
+   1. Independent Color System: Semantic Accents & Statuses with guaranteed
+      contrast ratios (WCAG AA/AAA compliant).
+   2. Dependent Color System: Surfaces, Elevations, Borders & Typography
+      that adapt dynamically to canvas luminance (Dark, OLED, Navy, Light).
+   3. Theme Mode Modifiers: Glassmorphic vs Flat Solid.
    ========================================================================== */
 
 :root {
-    /* --- Master Color Swatches --- */
+    /* --- Master Palette Swatches (Teal Slate Defaults) --- */
     --palette-dark-slate: #283D3B;
     --palette-stormy-teal: #197278;
     --palette-powder-petal: #EDDDD4;
     --palette-tomato-jam: #C44536;
     --palette-chestnut: #772E25;
 
-    /* --- Backgrounds & Canvas (Glassmorphic Default) --- */
-    --bg-canvas: #1e2e2c;
-    --bg-canvas-deep: #162221;
-    --card-surface: #283D3B;
-    --card-surface-glass: rgba(40, 61, 59, 0.78);
-    --card-surface-hover: rgba(46, 70, 68, 0.92);
-    --card-border: rgba(237, 221, 212, 0.14);
-    --card-border-hover: rgba(25, 114, 120, 0.65);
-
-    /* --- Primary Interactive (Stormy Teal) --- */
+    /* ======================================================================
+       1. INDEPENDENT COLOR SYSTEM (Semantic & Accent Tokens)
+       ====================================================================== */
+    /* Primary Interactive (Brand Accent) */
     --color-primary: #197278;
     --color-primary-light: #228b93;
     --color-primary-dark: #12555a;
     --color-primary-glow: rgba(25, 114, 120, 0.40);
-    --color-primary-subtle: rgba(25, 114, 120, 0.16);
+    --color-primary-subtle: rgba(25, 114, 120, 0.18);
+    --color-primary-subtle-border: rgba(25, 114, 120, 0.45);
+    --color-primary-subtle-text: #5eead4;
+    --color-on-primary: #ffffff;
 
-    /* --- Typography & Light Surfaces (Powder Petal) --- */
-    --text-primary: #EDDDD4;
-    --text-secondary: rgba(237, 221, 212, 0.78);
-    --text-muted: rgba(237, 221, 212, 0.52);
-    --text-subtle: rgba(237, 221, 212, 0.32);
-
-    /* --- Urgency / Alerts / Danger (Tomato Jam) --- */
+    /* Urgent / Alert / Danger */
     --color-urgent: #C44536;
     --color-urgent-light: #d65545;
     --color-urgent-glow: rgba(196, 69, 54, 0.45);
-    --color-urgent-subtle: rgba(196, 69, 54, 0.18);
+    --color-urgent-subtle: rgba(196, 69, 54, 0.20);
+    --color-urgent-subtle-border: rgba(196, 69, 54, 0.45);
+    --color-urgent-subtle-text: #fca5a5;
+    --color-on-urgent: #ffffff;
 
-    /* --- Warm Secondary & Borders (Chestnut) --- */
-    --color-chestnut: #772E25;
-    --color-chestnut-glow: rgba(119, 46, 37, 0.35);
-    --color-chestnut-subtle: rgba(119, 46, 37, 0.20);
+    /* Warning / Attention (Warm Amber/Gold) */
+    --color-warning: #f59e0b;
+    --color-warning-light: #fbbf24;
+    --color-warning-glow: rgba(245, 158, 11, 0.45);
+    --color-warning-subtle: rgba(245, 158, 11, 0.20);
+    --color-warning-subtle-border: rgba(245, 158, 11, 0.45);
+    --color-warning-subtle-text: #fcd34d;
+    --color-on-warning: #09090b;
 
-    /* --- Success & In Progress (Harmonized with Stormy Teal) --- */
+    /* Success / Completed / Mint */
     --color-success: #2dd4bf;
-    --color-success-subtle: rgba(45, 212, 191, 0.16);
+    --color-success-light: #5eead4;
+    --color-success-glow: rgba(45, 212, 191, 0.45);
+    --color-success-subtle: rgba(45, 212, 191, 0.18);
+    --color-success-subtle-border: rgba(45, 212, 191, 0.45);
+    --color-success-subtle-text: #6ee7b7;
+    --color-on-success: #09090b;
 
-    /* --- Geometry & Radii --- */
+    /* Secondary Accent (Warm Chestnut / Slate) */
+    --color-secondary: #772E25;
+    --color-secondary-subtle: rgba(119, 46, 37, 0.20);
+    --color-secondary-subtle-border: rgba(119, 46, 37, 0.45);
+    --color-secondary-subtle-text: #fca5a5;
+    --color-on-secondary: #ffffff;
+
+    /* Info / Azure / Cyan */
+    --color-info: #38bdf8;
+    --color-info-subtle: rgba(56, 189, 248, 0.18);
+    --color-info-subtle-border: rgba(56, 189, 248, 0.45);
+    --color-info-subtle-text: #7dd3fc;
+    --color-on-info: #09090b;
+
+    /* ======================================================================
+       2. DEPENDENT COLOR SYSTEM (Surfaces, Canvas, Elevations & Typography)
+       ====================================================================== */
+    /* Canvas & Backgrounds */
+    --bg-canvas: #1e2e2c;
+    --bg-canvas-deep: #14201e;
+    --bg-canvas-subtle: #243634;
+    --bg-canvas-overlay: rgba(0, 0, 0, 0.72);
+
+    /* Card Surfaces & Elevations */
+    --card-surface: #283D3B;
+    --card-surface-glass: rgba(40, 61, 59, 0.85);
+    --card-surface-hover: #334c49;
+    --card-surface-elevated: #2f4744;
+    --card-surface-popover: #35504d;
+    --card-surface-sunken: rgba(20, 32, 30, 0.75);
+
+    /* Borders & Outlines */
+    --card-border: rgba(237, 221, 212, 0.14);
+    --card-border-subtle: rgba(237, 221, 212, 0.08);
+    --card-border-strong: rgba(237, 221, 212, 0.24);
+    --card-border-dashed: rgba(237, 221, 212, 0.18);
+    --card-border-hover: rgba(25, 114, 120, 0.70);
+
+    /* Typography (Strict Contrast Hierarchy) */
+    --text-primary: #EDDDD4;
+    --text-secondary: rgba(237, 221, 212, 0.80);
+    --text-muted: rgba(237, 221, 212, 0.54);
+    --text-subtle: rgba(237, 221, 212, 0.32);
+    --text-inverse: #0f172a;
+
+    /* Form Controls & Inputs */
+    --input-bg: rgba(20, 32, 30, 0.80);
+    --input-border: rgba(237, 221, 212, 0.15);
+    --input-border-focus: var(--color-primary);
+    --input-text: #EDDDD4;
+    --input-placeholder: rgba(237, 221, 212, 0.42);
+
+    /* Button Tokens */
+    --btn-primary-bg: linear-gradient(135deg, #197278, #228b93);
+    --btn-primary-hover: linear-gradient(135deg, #228b93, #299fa8);
+    --btn-primary-text: #ffffff;
+    --btn-primary-border: rgba(237, 221, 212, 0.20);
+    --btn-primary-shadow: 0 4px 15px rgba(25, 114, 120, 0.40);
+
+    --btn-secondary-bg: rgba(40, 61, 59, 0.85);
+    --btn-secondary-hover: rgba(51, 76, 73, 0.95);
+    --btn-secondary-text: #EDDDD4;
+    --btn-secondary-border: var(--card-border);
+
+    --btn-del-color: #C44536;
+    --btn-del-border: rgba(196, 69, 54, 0.40);
+    --btn-del-bg-hover: rgba(196, 69, 54, 0.20);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.65);
+    --shadow-card: var(--shadow-md);
+    --shadow-modal: var(--shadow-lg);
+    --shadow-dropdown: var(--shadow-sm);
+
+    /* Scrollbars */
+    --scrollbar-track: #14201e;
+    --scrollbar-thumb: rgba(237, 221, 212, 0.22);
+    --scrollbar-thumb-hover: rgba(25, 114, 120, 0.85);
+
+    /* Radii & Geometry */
     --radius-sm: 8px;
     --radius-md: 14px;
     --radius-lg: 20px;
     --radius-xl: 26px;
 
-    /* --- Backward-Compatibility Aliases (Map to 5-Color Master Palette) --- */
+    /* Transitions & Typography */
+    --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    /* Backward-Compatibility Aliases */
     --card-slate: var(--card-surface);
     --card-slate-glass: var(--card-surface-glass);
     --card-slate-border: var(--card-border);
     --card-hover-border: var(--card-border-hover);
     --blue-gradient-start: var(--palette-stormy-teal);
-    --blue-gradient-end: #228b93;
-    --blue-accent-cyan: #2dd4bf;
+    --blue-gradient-end: var(--color-primary-light);
+    --blue-accent-cyan: var(--color-primary);
     --blue-glow: var(--color-primary-glow);
-    --urgent-amber: var(--palette-chestnut);
-    --urgent-red: var(--palette-tomato-jam);
+    --urgent-amber: var(--color-warning);
+    --urgent-red: var(--color-urgent);
     --urgent-glow: var(--color-urgent-glow);
-    --success-emerald: #2dd4bf;
-
-    /* --- Transitions & Typography --- */
-    --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
-    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --success-emerald: var(--color-success);
 }
 
 /* ==========================================================================
-   FLAT THEME VARIANT (Clean, Minimal, Solid, Zero-Glass Blur)
+   FLAT THEME VARIANT (Solid Surfaces, Zero Glass Blur, Crisp 1px Borders)
    ========================================================================== */
 body.theme-flat {
-    background-color: #1a2725 !important;
+    background-color: var(--bg-canvas) !important;
     background-image: none !important;
 }
 
-body.theme-flat .app-header {
-    background: #233533 !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
-    border: 1px solid rgba(237, 221, 212, 0.12) !important;
-}
-
+body.theme-flat .app-header,
 body.theme-flat .glass-panel,
 body.theme-flat .modal-window,
 body.theme-flat .card-item,
 body.theme-flat .subject-card,
 body.theme-flat .kanban-column,
+body.theme-flat .kanban-card,
 body.theme-flat .floating-dropdown-menu,
 body.theme-flat .custom-select-dropdown,
-body.theme-flat .month-calendar-wrapper {
-    background: #283D3B !important;
+body.theme-flat .month-calendar-wrapper,
+body.theme-flat .calendar-view-container,
+body.theme-flat .calendar-day-cell {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-    border: 1px solid rgba(237, 221, 212, 0.12) !important;
+    box-shadow: var(--shadow-sm) !important;
 }
 
 body.theme-flat .btn-primary {
-    background: var(--palette-stormy-teal) !important;
+    background: var(--color-primary) !important;
     box-shadow: none !important;
-    border: 1px solid rgba(237, 221, 212, 0.18) !important;
 }
 
 body.theme-flat .btn-primary:hover {
-    background: #20868d !important;
+    background: var(--color-primary-light) !important;
     box-shadow: none !important;
 }
 
 body.theme-flat .btn-secondary {
-    background: #20312f !important;
-    border: 1px solid rgba(237, 221, 212, 0.12) !important;
+    background: var(--bg-canvas-deep) !important;
+    box-shadow: none !important;
+}
+
+/* ==========================================================================
+   DAYLIGHT / LIGHT THEME VARIANT
+   ========================================================================== */
+body.theme-light {
+    background-color: var(--bg-canvas) !important;
+    color: var(--text-primary) !important;
 }

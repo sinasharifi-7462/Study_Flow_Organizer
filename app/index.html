@@ -59,14 +59,14 @@
                     </button>
                     <div class="floating-dropdown-menu hidden" id="headerCreateMenu">
                         <button type="button" class="dropdown-item" id="menuNewTaskBtn">
-                            <span class="item-icon">📋</span>
+                            <span class="item-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
                             <div class="item-content">
                                 <span class="item-title">New Task</span>
                                 <span class="item-desc">Homework, assignment, or project</span>
                             </div>
                         </button>
                         <button type="button" class="dropdown-item" id="menuNewEventBtn">
-                            <span class="item-icon">📅</span>
+                            <span class="item-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
                             <div class="item-content">
                                 <span class="item-title">New Event</span>
                                 <span class="item-desc">Quiz, exam, or review session</span>
@@ -74,14 +74,14 @@
                         </button>
                         <div class="dropdown-divider"></div>
                         <button type="button" class="dropdown-item" id="menuNewSubjectBtn">
-                            <span class="item-icon">📚</span>
+                            <span class="item-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
                             <div class="item-content">
                                 <span class="item-title">New Course Subject</span>
                                 <span class="item-desc">Add an academic course</span>
                             </div>
                         </button>
                         <button type="button" class="dropdown-item" id="menuNewMaterialBtn">
-                            <span class="item-icon">📁</span>
+                            <span class="item-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span>
                             <div class="item-content">
                                 <span class="item-title">Link Course Folder</span>
                                 <span class="item-desc">Connect materials to local Explorer</span>
@@ -89,6 +89,14 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Course Trash Bin Button (Req 7) -->
+                <button type="button" class="header-icon-btn" id="btnTrashHeader" title="Course Trash Bin">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                </button>
 
                 <!-- Minimalist Single-Color Settings Button -->
                 <button type="button" class="header-icon-btn" id="btnSettingsHeader" title="Settings & Storage">
@@ -102,61 +110,82 @@
     </header>
 
     <!-- ========================================================================
-         MAIN TOOLBAR: SEARCH, VIEW SWITCHER & FILTER PILLS
+         MAIN TOOLBAR: MINIMALIST CONTROL BAR (2-TIER STREAMLINED)
          ======================================================================== -->
     <div class="main-toolbar">
+        <!-- Tier 1: Search & Segmented View Switcher -->
         <div class="toolbar-top-row">
-            <!-- Global Search -->
             <div class="search-container">
                 <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="11" cy="11" r="8"/>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <input type="text" id="globalSearchInput" class="search-input" placeholder="Search tasks, subjects, folders, locations, or notes... (Press '/' to focus)">
-                <button type="button" id="clearSearchBtn" class="search-clear">&times;</button>
+                <input type="text" id="globalSearchInput" class="search-input" placeholder="Search tasks, courses, notes...">
+                <kbd class="search-kbd-hint" id="searchKbdHint" title="Press '/' to focus search">/</kbd>
+                <button type="button" id="clearSearchBtn" class="search-clear" title="Clear search">&times;</button>
             </div>
 
-            <!-- Compact View Switcher Dropdown -->
-            <div class="view-dropdown-wrap" id="viewSelectorWrap">
-                <button type="button" class="view-selector-btn" id="viewSelectorBtn" title="Select View">
-                    <span id="activeViewIcon">🗂️</span>
-                    <span id="activeViewLabel">Cards View</span>
-                    <span class="dropdown-chevron">▾</span>
+            <!-- 1-Click Segmented View Switcher (Press 1, 2, 3, 4) -->
+            <div class="view-segmented-control" id="viewSegmentedControl" role="tablist" aria-label="Views">
+                <button type="button" class="segmented-tab active" data-view="grid" title="Cards Grid (Press 1)">
+                    <span class="tab-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></span>
+                    <span class="tab-label">Cards</span>
+                    <span class="tab-shortcut">1</span>
                 </button>
-                <div class="view-dropdown-menu hidden" id="viewSelectorMenu">
-                    <button type="button" class="view-menu-item active" data-view="grid">
-                        <span>🗂️</span> <span>Cards Grid</span>
-                    </button>
-                    <button type="button" class="view-menu-item" data-view="table">
-                        <span>📑</span> <span>Matrix Table</span>
-                    </button>
-                    <button type="button" class="view-menu-item" data-view="timeline">
-                        <span>⏳</span> <span>Timeline</span>
-                    </button>
-                    <button type="button" class="view-menu-item" data-view="kanban">
-                        <span>📌</span> <span>Kanban Board</span>
-                    </button>
-                </div>
+                <button type="button" class="segmented-tab" data-view="calendar" title="Calendar View (Press 2)">
+                    <span class="tab-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
+                    <span class="tab-label">Calendar</span>
+                    <span class="tab-shortcut">2</span>
+                </button>
+                <button type="button" class="segmented-tab" data-view="timeline" title="Timeline View (Press 3)">
+                    <span class="tab-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                    <span class="tab-label">Timeline</span>
+                    <span class="tab-shortcut">3</span>
+                </button>
+                <button type="button" class="segmented-tab" data-view="kanban" title="Kanban Board (Press 4)">
+                    <span class="tab-icon"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="4.5" height="16" rx="1"/><rect x="9.75" y="4" width="4.5" height="12" rx="1"/><rect x="16.5" y="4" width="4.5" height="16" rx="1"/></svg></span>
+                    <span class="tab-label">Kanban</span>
+                    <span class="tab-shortcut">4</span>
+                </button>
             </div>
         </div>
 
-        <!-- Filter Pills & Statistics Strip -->
-        <div class="filters-stats-row">
-            <div class="filter-pills-wrap">
-                <button type="button" class="filter-pill active" data-filter="all">All Items</button>
-                <button type="button" class="filter-pill" data-filter="only_tasks">📋 Tasks</button>
-                <button type="button" class="filter-pill" data-filter="only_events">📅 Events</button>
-                <button type="button" class="filter-pill filter-pill-urgent" data-filter="urgent">🚨 Under 48h</button>
-                <button type="button" class="filter-pill" data-filter="pending">⏳ In Progress</button>
-                <button type="button" class="filter-pill" data-filter="completed">✅ Completed</button>
+        <!-- Tier 2: Streamlined Status Filters + Integrated Inline Counters + Compact Topics Strip -->
+        <div class="toolbar-secondary-row">
+            <div class="filter-pills-wrap" role="tablist" aria-label="Status Filters">
+                <button type="button" class="filter-pill active" data-filter="all" title="All Items">
+                    <span class="pill-label">All</span>
+                    <span class="pill-count" id="statTotalTasks">0</span>
+                </button>
+                <button type="button" class="filter-pill" data-filter="only_tasks" title="Tasks Only">
+                    <span class="pill-label">Tasks</span>
+                    <span class="pill-count" id="statCountTasks">0</span>
+                </button>
+                <button type="button" class="filter-pill" data-filter="only_events" title="Events Only">
+                    <span class="pill-label">Events</span>
+                    <span class="pill-count" id="statCountEvents">0</span>
+                </button>
+                <button type="button" class="filter-pill filter-pill-urgent" data-filter="urgent" title="Due in <48h">
+                    <span class="pill-label">Urgent</span>
+                    <span class="pill-count urgent-badge" id="statUrgentTasks">0</span>
+                </button>
+                <button type="button" class="filter-pill" data-filter="pending" title="In Progress Items">
+                    <span class="pill-label">In Progress</span>
+                </button>
+                <button type="button" class="filter-pill filter-pill-done" data-filter="completed" title="Completed Items">
+                    <span class="pill-label">Done</span>
+                    <span class="pill-count" id="statCompletedTasks">0</span>
+                </button>
             </div>
 
-            <div class="stats-counter-strip">
-                <div class="stat-item">Total: <span class="stat-value" id="statTotalTasks">0</span></div>
-                <div class="stat-item" style="color: var(--palette-stormy-teal);">Tasks: <span class="stat-value" id="statCountTasks">0</span></div>
-                <div class="stat-item" style="color: var(--palette-chestnut);">Events: <span class="stat-value" id="statCountEvents">0</span></div>
-                <div class="stat-item" style="color: var(--palette-tomato-jam);">Urgent: <span class="stat-value" id="statUrgentTasks">0</span></div>
-                <div class="stat-item" style="color: var(--color-success);">Completed: <span class="stat-value" id="statCompletedTasks">0</span></div>
+            <div class="toolbar-divider" aria-hidden="true"></div>
+
+            <div class="tags-filter-strip-row" id="tagsFilterStripRow">
+                <span class="tags-filter-title">Topics</span>
+                <div class="tags-pills-scroll-wrap" id="tagsPillsScrollWrap"></div>
+                <button type="button" class="btn-add-tag-filter" id="btnOpenNewTagModal" title="Manage Topics">
+                    <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -168,8 +197,8 @@
         <!-- 1. Grid View (Cards with compact task drawer) -->
         <div id="gridContentView" class="subjects-grid"></div>
 
-        <!-- 2. Matrix Table View -->
-        <div id="tableContentView" class="subjects-table-wrapper hidden"></div>
+        <!-- 2. Academic Calendar View -->
+        <div id="calendarContentView" class="calendar-view-wrapper hidden"></div>
 
         <!-- 3. Proportional Timeline View -->
         <div id="timelineContentView" class="timeline-view-wrapper hidden"></div>
@@ -179,504 +208,30 @@
     </main>
 
     <!-- ========================================================================
-         MODAL 1: ADD / EDIT ITEM (TASK VS EVENT)
-         Featuring Custom Dual Calendar (Gregorian + Shamsi) & Custom Time Picker
+         DESKTOP COMMAND PALETTE (Ctrl+K / Cmd+K)
          ======================================================================== -->
-    <div id="itemModal" class="modal-overlay">
-        <div class="modal-window">
-            <div class="modal-header">
-                <h2 id="itemModalTitle">Add to Study Schedule</h2>
-                <button type="button" class="modal-close-btn" id="itemModalCloseBtn">&times;</button>
-            </div>
-            <form id="itemForm">
-                <div class="modal-body">
-                    <!-- Task vs Event Switch -->
-                    <div class="kind-segmented-switch">
-                        <button type="button" class="kind-tab-btn active kind-task" id="btnKindTask">
-                            <span>📋</span> <span>Task (HW / Assignment / Project)</span>
-                        </button>
-                        <button type="button" class="kind-tab-btn" id="btnKindEvent">
-                            <span>📅</span> <span>Event (Quiz / Exam / Session)</span>
-                        </button>
-                    </div>
-
-                    <!-- Type Selector Pills -->
-                    <div class="form-group">
-                        <label class="form-label">Item Category Type:</label>
-                        <div class="type-pills-container" id="modalTypePillsWrap"></div>
-                    </div>
-
-                    <!-- Course Subject (Custom Styled Dropdown) -->
-                    <div class="form-group">
-                        <label class="form-label">Course Subject:</label>
-                        <div id="itemSubjectSelectWrap"></div>
-                        <input type="hidden" id="itemSubjectSelect" required>
-                    </div>
-
-                    <!-- Extra Info Section -->
-                    <div class="extra-info-section">
-                        <div class="extra-info-header">
-                            <span>Item Metadata</span>
-                            <span style="font-size: 0.72rem; color: var(--text-muted);">Auto-generates title</span>
-                        </div>
-
-                        <!-- Task Fields -->
-                        <div id="taskExtraFieldsWrap" class="extra-fields-grid">
-                            <div class="form-group">
-                                <label class="form-label" for="taskDetailNumber">Number or Suffix:</label>
-                                <input type="text" id="taskDetailNumber" class="form-input" placeholder="e.g. 3 or Phase 1">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="itemTitleInput">Full Task Title:</label>
-                                <input type="text" id="itemTitleInput" class="form-input" placeholder="Final task title" required>
-                            </div>
-                        </div>
-
-                        <!-- Event Fields -->
-                        <div id="eventExtraFieldsWrap" class="extra-fields-grid hidden">
-                            <div class="form-group">
-                                <label class="form-label" for="eventDetailNumber">Event Number / Topic:</label>
-                                <input type="text" id="eventDetailNumber" class="form-input" placeholder="e.g. Midterm 1">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label" for="eventLocationInput">Room / Location or Link:</label>
-                                <input type="text" id="eventLocationInput" class="form-input" placeholder="e.g. Hall 302 or Online">
-                            </div>
-                        </div>
-
-                        <!-- Notes & Markdown Checklists -->
-                        <div class="form-group" style="margin-top: 6px;">
-                            <label class="form-label" for="itemNotesInput">
-                                <span>Notes & Checklists (Markdown supported):</span>
-                                <span style="font-size: 0.7rem; color: var(--palette-stormy-teal);">Supports - [ ] checklist items</span>
-                            </label>
-                            <textarea id="itemNotesInput" class="form-textarea" placeholder="e.g.&#10;- [ ] Read Chapter 4&#10;- [ ] Solve Problems 4.2 & 4.5&#10;Exam room: Hall 302"></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Custom Dual Date & Time Picker Section (Month Calendar Viewer) -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            <span>Target Due Date & Time (Gregorian & Shamsi Calendar):</span>
-                        </label>
-                        <div class="dual-date-picker-box">
-                            <!-- Custom Dual Date Picker Slot (Interactive Month Grid) -->
-                            <div id="customDatePickerSlot"></div>
-
-                            <!-- Custom Time Picker Slot -->
-                            <div id="customTimePickerSlot"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelItem">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveItem">Save Item</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-         MODAL 2: ADD / EDIT SUBJECT
-         ======================================================================== -->
-    <div id="subjectModal" class="modal-overlay">
-        <div class="modal-window">
-            <div class="modal-header">
-                <h2 id="subjectModalTitle">Course Subject</h2>
-                <button type="button" class="modal-close-btn" id="subjectModalCloseBtn">&times;</button>
-            </div>
-            <form id="subjectForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label" for="subjectNameInput">Subject Name:</label>
-                        <input type="text" id="subjectNameInput" class="form-input" placeholder="e.g. Fluid Mechanics or Computer Science" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="subjectCodeInput">Course Code / Units / Instructor:</label>
-                        <input type="text" id="subjectCodeInput" class="form-input" placeholder="e.g. CS-101 • 3 Units • Hall 204">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Theme Gradient:</label>
-                        <div id="subjectGradientPicker" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-del hidden" id="btnDeleteSubject" style="color: var(--palette-tomato-jam); border-color: rgba(196, 69, 54, 0.4); margin-right: auto;">
-                        Delete
-                    </button>
-                    <button type="button" class="btn btn-secondary" id="btnCancelSubject">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveSubject">Save Subject</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-         MODAL 3: LINK COURSE FOLDER
-         ======================================================================== -->
-    <div id="folderModal" class="modal-overlay">
-        <div class="modal-window">
-            <div class="modal-header">
-                <h2 id="folderModalTitle">Link Course Folder</h2>
-                <button type="button" class="modal-close-btn" id="folderModalCloseBtn">&times;</button>
-            </div>
-            <form id="folderForm">
-                <div class="modal-body">
-                    <!-- Course Subject (Custom Styled Dropdown) -->
-                    <div class="form-group">
-                        <label class="form-label">Course Subject:</label>
-                        <div id="folderSubjectSelectWrap"></div>
-                        <input type="hidden" id="folderSubjectSelect" required>
-                    </div>
-
-                    <div class="material-drop-box">
-                        <label class="form-label">Folder Location:</label>
-                        <div class="material-picker-row">
-                            <button type="button" class="btn btn-primary btn-sm" id="btnBrowseFolder" style="background: var(--palette-chestnut);">
-                                📁 Select Folder from System
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnPasteFolderPath">
-                                📋 Paste Path
-                            </button>
-                        </div>
-                        <div class="form-group" style="margin-top: 6px;">
-                            <label class="form-label" style="font-size: 0.74rem;">Folder Label:</label>
-                            <input type="text" id="folderNameInput" class="form-input" placeholder="e.g. Lectures & Slides, Lab Manuals..." required>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label" style="font-size: 0.74rem;">Folder Path on Disk:</label>
-                            <input type="text" id="folderPathInput" class="form-input" placeholder="e.g. D:\University\Course\Materials" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="folderNotesInput">Description / Notes (Optional):</label>
-                        <textarea id="folderNotesInput" class="form-textarea" placeholder="Contains reference materials, past exams, or slide PDFs..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" id="btnCancelFolder">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="btnSaveFolder">Save Folder</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-         MODAL 4: SETTINGS & STORAGE PREFERENCES (With Embedded Shortcuts)
-         ======================================================================== -->
-    <div id="settingsModal" class="modal-overlay">
-        <div class="modal-window" style="max-width: 560px;">
-            <div class="modal-header">
-                <h2>⚙️ Settings & Storage</h2>
-                <button type="button" class="modal-close-btn" id="settingsModalCloseBtn">&times;</button>
-            </div>
-            <div class="modal-body" style="gap: 16px;">
-                <!-- Theme Option Selector: Glassmorphic vs Flat -->
-                <div class="form-group">
-                    <label class="form-label" style="font-weight: 700; color: var(--palette-powder-petal);">
-                        Visual Theme Style:
-                    </label>
-                    <div class="theme-switch-container">
-                        <div class="theme-card-option is-active" id="themeOptionGlass" data-theme="glass">
-                            <span class="theme-card-icon">🔮</span>
-                            <span class="theme-card-title">Glassmorphic</span>
-                            <span class="theme-card-desc">Atmospheric glows, deep blur & glass depth</span>
-                        </div>
-                        <div class="theme-card-option" id="themeOptionFlat" data-theme="flat">
-                            <span class="theme-card-icon">🟩</span>
-                            <span class="theme-card-title">Flat Minimal</span>
-                            <span class="theme-card-desc">Solid slate surfaces, hairline borders & zero blur</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Local AppData Storage & Backup Management (Moved to Settings) -->
-                <div class="form-group">
-                    <label class="form-label" style="font-weight: 700; color: var(--palette-powder-petal);">
-                        Local AppData Storage & Backups:
-                    </label>
-                    <div class="disk-sync-box" style="margin: 0; padding: 14px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span id="modalDiskSyncDot" style="width: 10px; height: 10px; border-radius: 50%; background: #2dd4bf; display: inline-block;"></span>
-                                <strong id="modalDiskSyncText" style="font-size: 0.86rem; color: var(--palette-powder-petal);">Checking status...</strong>
-                            </div>
-                            <button type="button" class="btn btn-sm btn-outline-cyan" id="btnOpenDataFolder">
-                                📂 Explorer
-                            </button>
-                        </div>
-                        <div style="font-family: monospace; font-size: 0.73rem; color: var(--palette-stormy-teal); word-break: break-all; margin-top: 5px;" id="modalDataDirText">
-                            Loading directory...
-                        </div>
-                        <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.45; margin-top: 6px;">
-                            Data is permanently saved in your OS AppData directory, keeping it safe and independent from git updates.
-                        </p>
-                        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnExportJson" style="flex: 1; min-width: 130px;">
-                                💾 Export Backup
-                            </button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnImportJson" style="flex: 1; min-width: 130px;">
-                                📥 Restore JSON
-                            </button>
-                            <input type="file" id="importJsonFileInput" accept=".json" style="display: none;">
-                        </div>
-                        <div style="margin-top: 10px; border-top: 1px solid rgba(237, 221, 212, 0.08); padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                            <span style="font-size: 0.74rem; color: var(--text-muted);">Reset workspace:</span>
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnWipeData" style="color: var(--palette-tomato-jam); border-color: rgba(196, 69, 54, 0.45); font-size: 0.74rem; padding: 3px 10px;">
-                                Clear All Data
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Assistant Configuration -->
-                <div class="form-group" style="margin-top: 4px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                        <label class="form-label" style="font-weight: 700; color: var(--palette-powder-petal); margin: 0;">
-                            ✨ AI Assistant Configuration:
-                        </label>
-                        <span id="aiSettingsStatusPill" class="ai-status-pill status-unconfigured">Unconfigured</span>
-                    </div>
-
-                    <div class="ai-settings-card">
-                        <!-- Provider Custom Select -->
-                        <div class="form-group" style="margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 0.74rem;">AI Provider:</label>
-                            <div id="aiProviderSelectWrap"></div>
-                            <input type="hidden" id="aiProviderSelect" value="gemini">
-                        </div>
-
-                        <!-- Custom Base URL (hidden unless custom) -->
-                        <div class="form-group hidden" id="aiBaseUrlWrap" style="margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 0.74rem;">Base URL / Endpoint:</label>
-                            <input type="text" id="aiBaseUrlInput" class="form-input" placeholder="e.g. https://openrouter.ai/api/v1 or http://localhost:11434/v1">
-                        </div>
-
-                        <!-- API Key Input -->
-                        <div class="form-group" style="margin-bottom: 8px;">
-                            <label class="form-label" style="font-size: 0.74rem;">API Key:</label>
-                            <div style="display: flex; gap: 6px;">
-                                <input type="password" id="aiApiKeyInput" class="form-input" placeholder="Paste your API key here (e.g. AIzaSy... or sk-...)" style="font-family: monospace;">
-                                <button type="button" class="btn btn-secondary btn-sm" id="btnToggleApiKeyVisibility" title="Show / Hide Key" style="padding: 0 10px;">👁️</button>
-                            </div>
-                            <span style="font-size: 0.69rem; color: var(--text-muted); margin-top: 3px; display: block;" id="aiApiKeyHint">
-                                For Gemini, get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--palette-stormy-teal);">Google AI Studio</a>.
-                            </span>
-                        </div>
-
-                        <!-- Fetch Models Button & Model Custom Select -->
-                        <div class="form-group" style="margin-bottom: 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <label class="form-label" style="font-size: 0.74rem; margin: 0;">AI Model:</label>
-                                <button type="button" class="btn btn-sm btn-outline-cyan" id="btnFetchAiModels" style="font-size: 0.72rem; padding: 2px 8px;">
-                                    🔄 Fetch Models from API
-                                </button>
-                            </div>
-                            <div id="aiModelSelectWrap"></div>
-                            <input type="hidden" id="aiModelSelect" value="">
-                            <span id="aiModelStatusText" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 3px; display: block;"></span>
-                        </div>
-
-                        <!-- Action Buttons -->
-                        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
-                            <button type="button" class="btn btn-secondary btn-sm" id="btnTestAiConnection">Test Connection</button>
-                            <button type="button" class="btn btn-primary btn-sm" id="btnSaveAiConfig">Save Settings</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Keyboard Shortcuts Cheat Sheet (Embedded Inside Settings) -->
-                <div class="form-group" style="margin-top: 4px;">
-                    <label class="form-label" style="font-weight: 700; color: var(--palette-powder-petal);">
-                        Keyboard Shortcuts Cheat Sheet:
-                    </label>
-                    <div style="display: flex; flex-direction: column; gap: 6px; background: rgba(40, 61, 59, 0.6); padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid rgba(237, 221, 212, 0.12);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(237, 221, 212, 0.08);">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Push-to-Talk AI Voice (Hold)</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(45, 212, 191, 0.4); color: #2dd4bf; padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">Hold Space or Alt + A</kbd>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(237, 221, 212, 0.08);">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Open AI Assistant Modal</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(45, 212, 191, 0.4); color: #2dd4bf; padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">Alt + A or A</kbd>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(237, 221, 212, 0.08);">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Open New Item Modal</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(237, 221, 212, 0.18); padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">Alt + N or N</kbd>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(237, 221, 212, 0.08);">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Focus Global Search</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(237, 221, 212, 0.18); padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">/ or Alt + S</kbd>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(237, 221, 212, 0.08);">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Cycle Views / Direct Views</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(237, 221, 212, 0.18); padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">Alt + V or 1, 2, 3, 4</kbd>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
-                            <span style="font-size: 0.82rem; color: var(--text-secondary);">Close Active Dialog</span>
-                            <kbd style="background: rgba(30, 46, 44, 0.9); border: 1px solid rgba(237, 221, 212, 0.18); padding: 2px 7px; border-radius: 5px; font-family: monospace; font-size: 0.78rem;">Escape</kbd>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary" id="btnCloseSettings">Done</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================================================
-         MODAL 5: SMART AI SCHEDULE ASSISTANT & PREVIEW MODAL
-         ======================================================================== -->
-    <div id="aiModal" class="modal-overlay">
-        <div class="modal-window ai-modal-window">
-            <!-- Minimalist AI Header -->
-            <div class="modal-header ai-modal-header">
-                <div class="ai-header-brand">
-                    <div class="ai-header-icon-box">
-                        <svg viewBox="0 0 24 24" fill="currentColor" class="ai-sparkle-icon ai-header-svg">
-                            <path d="M10 3C10 7.418 6.418 11 2 11C6.418 11 10 14.582 10 19C10 14.582 13.582 11 18 11C13.582 11 10 7.418 10 3Z"/>
-                            <path d="M18 2C18 4.209 16.209 6 14 6C16.209 6 18 7.791 18 10C18 7.791 19.791 6 22 6C19.791 6 18 4.209 18 2Z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <h2 class="ai-modal-title">AI Schedule Assistant</h2>
-                        <p class="ai-modal-subtitle">Schedule deadlines, tasks, and exams via voice or text</p>
-                    </div>
-                </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <!-- Small History Actions: Preview Last Changes & Undo -->
-                    <div id="aiHistoryActions" class="ai-history-actions hidden">
-                        <button type="button" class="btn-ai-history" id="btnAiPreviewLast" title="Preview changes from last session">
-                            <span>📋 Last Changes</span>
-                        </button>
-                        <button type="button" class="btn-ai-history btn-ai-undo" id="btnAiUndoLast" title="Undo all changes from last session">
-                            <span>↺ Undo</span>
-                        </button>
-                    </div>
-                    <button type="button" id="aiActiveModelBadge" class="ai-model-badge" title="Click to configure in Settings">
-                        Gemini
-                    </button>
-                    <button type="button" class="modal-close-btn" id="aiModalCloseBtn">&times;</button>
-                </div>
-            </div>
-
-            <div class="modal-body ai-modal-body">
-                <!-- Context Info Strip -->
-                <div class="ai-context-strip" id="aiContextStrip">
-                    <div class="ai-context-item">
-                        <span class="context-label">Calendar:</span>
-                        <strong id="aiContextDate">Loading calendar...</strong>
-                    </div>
-                    <div class="ai-context-item">
-                        <span class="context-label">Courses:</span>
-                        <strong id="aiContextCourses">0 courses</strong>
-                    </div>
-                </div>
-
-                <!-- Input Section with Telegram-style Push-to-Hold Mic -->
-                <div class="ai-input-card">
-                    <div class="ai-input-stage">
-                        <!-- Standard Textarea Wrapper -->
-                        <div class="ai-textarea-wrapper" id="aiTextareaWrapper">
-                            <textarea id="aiPromptInput" class="ai-prompt-textarea" placeholder="Type a scheduling instruction in English or Persian, or hold the mic below..."></textarea>
-                        </div>
-
-                        <!-- Telegram-Style Recording Overlay Capsule (Expands left over textarea) -->
-                        <div id="aiVoiceLiveIndicator" class="ai-voice-recording-capsule hidden">
-                            <div class="capsule-pulse-dot"></div>
-                            <div class="capsule-wave-bars">
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                                <span class="wave-bar"></span>
-                            </div>
-                            <span id="aiRecordingTimerText" class="capsule-timer">00:00</span>
-                            <span class="capsule-hint">Release to finish</span>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Action Row: Audio Snippet + Clear + Telegram Mic + Process -->
-                    <div class="ai-action-bar">
-                        <!-- Audio playback pill (appears after hold is finished) -->
-                        <div id="aiAudioSnippetWrap" class="ai-audio-snippet-wrap hidden">
-                            <button type="button" class="btn-audio-icon" id="btnAiPlayAudio" title="Play recording">
-                                <span id="aiPlayIcon">▶</span>
-                            </button>
-                            <span id="aiAudioDurationText" class="audio-clip-duration">0:00</span>
-                            <button type="button" class="btn-audio-icon btn-audio-discard" id="btnAiRemoveAudio" title="Discard voice note">
-                                &times;
-                            </button>
-                        </div>
-
-                        <div style="flex: 1;"></div>
-
-                        <!-- Clear Button -->
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnAiClearPrompt" title="Clear text and recording">Clear</button>
-
-                        <!-- Telegram-Style Mic Push & Hold Button (NO text!) -->
-                        <button type="button" class="btn-telegram-mic" id="btnAiVoiceRecord" title="Press & hold to record voice">
-                            <svg viewBox="0 0 24 24" class="telegram-mic-svg">
-                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                                <line x1="12" y1="19" x2="12" y2="23"/>
-                                <line x1="8" y1="23" x2="16" y2="23"/>
-                            </svg>
-                        </button>
-
-                        <!-- Process Instruction Button -->
-                        <button type="button" class="btn btn-primary btn-sm ai-analyze-btn" id="btnAiAnalyze">
-                            <span class="btn-spinner hidden" id="aiAnalyzeSpinner"></span>
-                            <span id="aiAnalyzeBtnText">Process Instruction</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Minimal Thinking State -->
-                <div id="aiThinkingState" class="ai-thinking-state hidden">
-                    <div class="ai-thinking-spinner"></div>
-                    <p id="aiThinkingStatus">Analyzing schedule...</p>
-                    <span style="font-size: 0.73rem; color: var(--text-muted);">Correlating dates, courses & events</span>
-                </div>
-
-                <!-- Error Banner -->
-                <div id="aiErrorBanner" class="ai-error-banner hidden"></div>
-
-                <!-- Editable Proposed Actions Preview Section -->
-                <div id="aiPreviewContainer" class="ai-preview-container hidden">
-                    <div class="ai-preview-header">
-                        <div>
-                            <h3 class="ai-preview-title">Proposed Schedule Changes</h3>
-                            <p id="aiPreviewSummary" class="ai-preview-summary">0 items detected</p>
-                        </div>
-                    </div>
-
-                    <!-- Editable Action Cards Container -->
-                    <div id="aiActionCardsList" class="ai-action-cards-list"></div>
-
-                    <!-- Bottom Right Actions Footer (Apply & Discard on the bottom right) -->
-                    <div class="ai-preview-footer">
-                        <button type="button" class="btn btn-secondary btn-sm" id="btnAiDiscardAll">Discard All</button>
-                        <button type="button" class="btn btn-primary btn-sm ai-apply-all-btn" id="btnAiApplyAll">
-                            Apply All (<span id="aiActionCount">0</span>)
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer ai-modal-footer">
-                <span style="font-size: 0.72rem; color: var(--text-muted);">
-                    Understands natural voice &amp; text instructions in English and Persian.
+    <div id="cmdPaletteOverlay" class="cmd-palette-overlay hidden">
+        <div class="cmd-palette-box">
+            <div class="cmd-palette-header">
+                <span class="cmd-palette-search-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </span>
-                <button type="button" class="btn btn-secondary btn-sm" id="btnAiClose">Close</button>
+                <input type="text" id="cmdPaletteInput" class="cmd-palette-input" placeholder="Type a command or search courses, tasks..." autocomplete="off">
+                <span class="cmd-palette-esc-badge">ESC</span>
+            </div>
+            <div class="cmd-palette-results" id="cmdPaletteResults"></div>
+            <div class="cmd-palette-footer">
+                <span><kbd>↑</kbd> <kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> select</span>
+                <span><kbd>ESC</kbd> dismiss</span>
             </div>
         </div>
     </div>
+
+    <!-- ========================================================================
+         DYNAMIC MODAL MOUNT CONTAINER
+         ======================================================================== -->
+    <div id="modalContainer"></div>
 
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="toast-container"></div>

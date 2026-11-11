@@ -75,7 +75,7 @@ export async function loadData() {
 export async function saveData(payload) {
     // 1. Always update localStorage
     try {
-        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+        if (typeof localStorage !== 'undefined') localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
     } catch (e) {
         console.warn('[API] Could not write to localStorage:', e);
     }

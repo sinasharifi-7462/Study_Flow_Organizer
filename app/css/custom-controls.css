@@ -1,8 +1,6 @@
 /* ==========================================================================
    CUSTOM CONTROLS: DROPDOWNS, MONTH CALENDAR & TIME PICKER
-   Styled exclusively with the 5-Color Master Palette:
-   #283D3B (Dark Slate), #197278 (Stormy Teal), #EDDDD4 (Powder Petal),
-   #C44536 (Tomato Jam), #772E25 (Chestnut)
+   Synced with Rigid Theme Custom Properties (Zero Hardcoded Colors)
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -20,10 +18,10 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 14px;
-    background: rgba(40, 61, 59, 0.85);
-    border: 1px solid rgba(237, 221, 212, 0.16);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: var(--radius-sm);
-    color: var(--text-primary);
+    color: var(--input-text);
     font-size: 0.9rem;
     cursor: pointer;
     transition: var(--transition-smooth);
@@ -33,7 +31,7 @@
 .custom-select-trigger:hover,
 .custom-select-trigger:focus,
 .custom-select-trigger[aria-expanded="true"] {
-    border-color: var(--palette-stormy-teal);
+    border-color: var(--input-border-focus);
     box-shadow: 0 0 0 3px var(--color-primary-subtle);
 }
 
@@ -86,7 +84,7 @@
 
 .custom-select-trigger[aria-expanded="true"] .custom-select-arrow {
     transform: rotate(180deg);
-    color: var(--palette-stormy-teal);
+    color: var(--color-primary);
 }
 
 .custom-select-dropdown {
@@ -95,12 +93,12 @@
     left: 0;
     right: 0;
     z-index: 1200;
-    background: #233533;
+    background: var(--card-surface-elevated);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(237, 221, 212, 0.18);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-sm);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    box-shadow: var(--shadow-dropdown);
     max-height: 250px;
     overflow-y: auto;
     padding: 6px;
@@ -125,13 +123,13 @@
 }
 
 .custom-select-option:hover {
-    background: rgba(25, 114, 120, 0.25);
+    background: var(--color-primary-subtle);
     color: var(--text-primary);
 }
 
 .custom-select-option.is-selected {
-    background: var(--palette-stormy-teal);
-    color: var(--palette-powder-petal);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
     font-weight: 600;
 }
 
@@ -151,7 +149,8 @@
 }
 
 .custom-select-option.is-selected .custom-option-secondary {
-    color: rgba(237, 221, 212, 0.8);
+    color: var(--color-on-primary);
+    opacity: 0.85;
 }
 
 .custom-select-empty {
@@ -165,8 +164,8 @@
    2. CUSTOM MONTH CALENDAR GRID VIEWER (DUAL DAY NUMBERING)
    -------------------------------------------------------------------------- */
 .month-calendar-wrapper {
-    background: rgba(35, 53, 51, 0.75);
-    border: 1px solid rgba(237, 221, 212, 0.14);
+    background: var(--card-surface-elevated);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
     padding: 14px;
     user-select: none;
@@ -178,7 +177,7 @@
     justify-content: space-between;
     margin-bottom: 12px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(237, 221, 212, 0.10);
+    border-bottom: 1px solid var(--card-border-subtle);
 }
 
 .cal-nav-btn {
@@ -187,8 +186,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(40, 61, 59, 0.9);
-    border: 1px solid rgba(237, 221, 212, 0.16);
+    background: var(--card-surface);
+    border: 1px solid var(--card-border);
     border-radius: 8px;
     color: var(--text-primary);
     font-size: 1.2rem;
@@ -197,9 +196,9 @@
 }
 
 .cal-nav-btn:hover {
-    background: var(--palette-stormy-teal);
-    border-color: var(--palette-stormy-teal);
-    color: var(--palette-powder-petal);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
 }
 
 .cal-title-box {
@@ -209,13 +208,13 @@
 .cal-primary-title {
     font-size: 0.98rem;
     font-weight: 700;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
     letter-spacing: -0.2px;
 }
 
 .cal-secondary-title {
     font-size: 0.74rem;
-    color: var(--palette-stormy-teal);
+    color: var(--color-primary);
     font-weight: 600;
     margin-top: 2px;
 }
@@ -237,7 +236,7 @@
 }
 
 .cal-weekday-cell.is-weekend {
-    color: var(--palette-tomato-jam);
+    color: var(--color-urgent);
 }
 
 .cal-days-grid {
@@ -252,8 +251,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(40, 61, 59, 0.5);
-    border: 1px solid rgba(237, 221, 212, 0.08);
+    background: var(--card-surface-glass);
+    border: 1px solid var(--card-border-subtle);
     border-radius: 8px;
     cursor: pointer;
     transition: var(--transition-smooth);
@@ -261,42 +260,48 @@
 }
 
 .cal-day-cell:hover {
-    background: rgba(25, 114, 120, 0.3);
-    border-color: var(--palette-stormy-teal);
+    background: var(--color-primary-subtle);
+    border-color: var(--card-border-hover);
 }
 
 .cal-day-cell.is-other-month {
-    opacity: 0.25;
+    opacity: 0.35;
 }
 
 .cal-day-cell.is-today {
-    border-color: var(--palette-stormy-teal);
-    box-shadow: inset 0 0 0 1px var(--palette-stormy-teal);
+    border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 1px var(--color-primary);
 }
 
 .cal-day-cell.is-selected {
-    background: var(--palette-stormy-teal) !important;
-    border-color: var(--palette-powder-petal) !important;
-    box-shadow: 0 4px 12px var(--color-primary-glow) !important;
+    background: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: var(--color-on-primary) !important;
+    box-shadow: var(--shadow-sm) !important;
 }
 
 .cal-num-greg {
     font-size: 0.88rem;
     font-weight: 700;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
     line-height: 1.1;
+}
+
+.cal-day-cell.is-selected .cal-num-greg {
+    color: var(--color-on-primary);
 }
 
 .cal-num-shamsi {
     font-size: 0.65rem;
-    color: rgba(237, 221, 212, 0.55);
+    color: var(--text-muted);
     font-weight: 500;
     line-height: 1;
     margin-top: 2px;
 }
 
 .cal-day-cell.is-selected .cal-num-shamsi {
-    color: rgba(237, 221, 212, 0.9);
+    color: var(--color-on-primary);
+    opacity: 0.85;
 }
 
 .cal-footer-banner {
@@ -305,11 +310,11 @@
     gap: 8px;
     margin-top: 10px;
     padding: 8px 12px;
-    background: rgba(25, 114, 120, 0.15);
-    border: 1px solid rgba(25, 114, 120, 0.35);
+    background: var(--color-primary-subtle);
+    border: 1px solid var(--color-primary-subtle-border);
     border-radius: 8px;
     font-size: 0.8rem;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
 }
 
 .cal-footer-icon {
@@ -317,7 +322,7 @@
 }
 
 .cal-footer-text span {
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
     opacity: 0.8;
 }
 
@@ -325,8 +330,8 @@
    3. CUSTOM TIME STEPPER PICKER
    -------------------------------------------------------------------------- */
 .custom-time-picker-wrapper {
-    background: rgba(35, 53, 51, 0.75);
-    border: 1px solid rgba(237, 221, 212, 0.14);
+    background: var(--card-surface-elevated);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
     padding: 12px 14px;
     margin-top: 10px;
@@ -345,7 +350,7 @@
 .time-picker-label {
     font-size: 0.82rem;
     font-weight: 600;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
 }
 
 .time-presets-wrap {
@@ -357,8 +362,8 @@
 
 .time-preset-pill {
     padding: 3px 8px;
-    background: rgba(40, 61, 59, 0.8);
-    border: 1px solid rgba(237, 221, 212, 0.14);
+    background: var(--card-surface-glass);
+    border: 1px solid var(--card-border-subtle);
     border-radius: 6px;
     font-size: 0.72rem;
     color: var(--text-secondary);
@@ -367,9 +372,9 @@
 }
 
 .time-preset-pill:hover {
-    background: var(--palette-stormy-teal);
-    color: var(--palette-powder-petal);
-    border-color: var(--palette-stormy-teal);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+    border-color: var(--color-primary);
 }
 
 .time-steppers-row {
@@ -392,29 +397,30 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(40, 61, 59, 0.9);
-    border: 1px solid rgba(237, 221, 212, 0.16);
+    background: var(--card-surface);
+    border: 1px solid var(--card-border);
     border-radius: 6px;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
     font-size: 0.65rem;
     cursor: pointer;
     transition: var(--transition-smooth);
 }
 
 .time-step-btn:hover {
-    background: var(--palette-stormy-teal);
-    border-color: var(--palette-stormy-teal);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-on-primary);
 }
 
 .time-val-display {
     font-size: 1.4rem;
     font-weight: 700;
     font-family: monospace;
-    color: var(--palette-powder-petal);
-    background: rgba(25, 38, 37, 0.8);
+    color: var(--text-primary);
+    background: var(--card-surface-sunken);
     padding: 4px 14px;
     border-radius: 8px;
-    border: 1px solid rgba(237, 221, 212, 0.12);
+    border: 1px solid var(--card-border-subtle);
     min-width: 58px;
     text-align: center;
 }
@@ -422,7 +428,7 @@
 .time-colon-separator {
     font-size: 1.6rem;
     font-weight: 700;
-    color: var(--palette-stormy-teal);
+    color: var(--color-primary);
     line-height: 1;
 }
 
@@ -441,10 +447,10 @@
     padding: 8px 16px;
     border-radius: 12px;
     font-weight: 700;
-    background: linear-gradient(135deg, var(--palette-stormy-teal), #228b93);
-    color: #ffffff;
-    border: 1px solid rgba(237, 221, 212, 0.25);
-    box-shadow: 0 4px 14px var(--color-primary-glow);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: 1px solid var(--btn-primary-border);
+    box-shadow: var(--btn-primary-shadow);
     cursor: pointer;
     transition: var(--transition-smooth);
 }
@@ -452,6 +458,7 @@
 .btn-create-floating:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px var(--color-primary-glow);
+    background: var(--btn-primary-hover);
 }
 
 .btn-create-icon {
@@ -470,12 +477,12 @@
     top: calc(100% + 8px);
     right: 0;
     min-width: 250px;
-    background: #233533;
+    background: var(--card-surface-elevated);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(237, 221, 212, 0.18);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-md);
-    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.55);
+    box-shadow: var(--shadow-dropdown);
     padding: 8px;
     z-index: 1200;
     animation: fadeInDropdown 0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -496,7 +503,8 @@
 }
 
 .dropdown-item:hover {
-    background: rgba(25, 114, 120, 0.25);
+    background: var(--color-primary-subtle);
+    color: var(--color-primary-subtle-text);
 }
 
 .dropdown-item .item-icon {
@@ -512,7 +520,7 @@
 .dropdown-item .item-title {
     font-size: 0.88rem;
     font-weight: 600;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
 }
 
 .dropdown-item .item-desc {
@@ -522,7 +530,7 @@
 
 .dropdown-divider {
     height: 1px;
-    background: rgba(237, 221, 212, 0.10);
+    background: var(--card-border-subtle);
     margin: 6px 0;
 }
 
@@ -532,10 +540,10 @@
     align-items: center;
     gap: 8px;
     padding: 7px 14px;
-    background: rgba(40, 61, 59, 0.85);
-    border: 1px solid rgba(237, 221, 212, 0.16);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
     border-radius: 10px;
-    color: var(--palette-powder-petal);
+    color: var(--text-primary);
     font-size: 0.86rem;
     font-weight: 600;
     cursor: pointer;
@@ -543,8 +551,8 @@
 }
 
 .view-selector-btn:hover {
-    border-color: var(--palette-stormy-teal);
-    background: rgba(46, 70, 68, 0.95);
+    border-color: var(--input-border-focus);
+    background: var(--card-surface-hover);
 }
 
 .view-dropdown-menu {
@@ -552,12 +560,12 @@
     top: calc(100% + 6px);
     right: 0;
     min-width: 190px;
-    background: #233533;
+    background: var(--card-surface-elevated);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(237, 221, 212, 0.18);
+    border: 1px solid var(--card-border);
     border-radius: var(--radius-sm);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    box-shadow: var(--shadow-dropdown);
     padding: 6px;
     z-index: 1200;
     animation: fadeInDropdown 0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -578,12 +586,12 @@
 }
 
 .view-menu-item:hover {
-    background: rgba(25, 114, 120, 0.25);
-    color: var(--palette-powder-petal);
+    background: var(--color-primary-subtle);
+    color: var(--text-primary);
 }
 
 .view-menu-item.active {
-    background: var(--palette-stormy-teal);
-    color: var(--palette-powder-petal);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
     font-weight: 600;
 }

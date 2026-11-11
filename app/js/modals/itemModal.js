@@ -1,3 +1,5 @@
+import { mountModalHtml } from './modalMount.js';
+import { ITEM_MODAL_HTML } from './modalTemplates.js';
 /**
  * Add / Edit Item (Task or Event) Modal Controller
  * Featuring Custom Month Calendar (Dual Gregorian + Shamsi) & Custom Stepper Time Picker
@@ -8,6 +10,7 @@ import { getDatePreset } from '../dateUtils.js';
 import { CustomDatePicker } from '../components/customDatePicker.js';
 import { CustomTimePicker } from '../components/customTimePicker.js';
 import { CustomSelect } from '../components/customSelect.js';
+import { showToast } from '../toast.js';
 
 let activeItemId = null;
 let activeKind = 'task';
@@ -17,12 +20,13 @@ let subjectSelect = null;
 let datePicker = null;
 let timePicker = null;
 
-export function openItemModal(itemId = null, preselectedSubjectId = null, defaultKind = 'task') {
+export function openItemModal(itemId = null, preselectedSubjectId = null, defaultKind = 'task', initialDueDate = null) {
+    mountModalHtml('itemModal', ITEM_MODAL_HTML);
     const modal = document.getElementById('itemModal');
     if (!modal) return;
 
     if (AppState.subjects.length === 0) {
-        alert("Please create a course subject before adding tasks or events.");
+        showToast({ message: "Please create a course subject before adding tasks or events.", type: 'warning' });
         return;
     }
 
@@ -64,6 +68,7 @@ export function openItemModal(itemId = null, preselectedSubjectId = null, defaul
             const d = new Date(item.dueDate);
             if (datePicker) datePicker.setDate(d, false);
             if (timePicker) timePicker.setTime(d.getHours(), d.getMinutes(), false);
+            document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.remove('active'));
         }
     } else {
         modalTitle.textContent = defaultKind === 'task' ? 'Add Task' : 'Add Event';
@@ -74,9 +79,10 @@ export function openItemModal(itemId = null, preselectedSubjectId = null, defaul
         document.getElementById('itemSubjectSelect').value = targetSubjId;
 
         // Default: Tomorrow at 23:59
-        const tomorrow = getDatePreset(1, 23, 59);
+        const tomorrow = initialDueDate ? new Date(initialDueDate) : getDatePreset(1, 23, 59);
         if (datePicker) datePicker.setDate(tomorrow, false);
-        if (timePicker) timePicker.setTime(23, 59, false);
+        if (timePicker) timePicker.setTime(tomorrow.getHours() || 23, tomorrow.getMinutes() || 59, false);
+        document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.toggle('active', b.dataset.preset === 'tomorrow'));
     }
 
     setKind(activeKind);
@@ -154,6 +160,7 @@ function autoUpdateTitle() {
 }
 
 export function initItemModalEvents() {
+    mountModalHtml('itemModal', ITEM_MODAL_HTML);
     // 1. Initialize Custom Subject Dropdown
     const subjectWrap = document.getElementById('itemSubjectSelectWrap');
     if (subjectWrap) {
@@ -189,6 +196,41 @@ export function initItemModalEvents() {
         });
     }
 
+    // 4. Quick Date Preset Chips (1-Click deadline selection)
+    function applyDatePreset(presetKey) {
+        const now = new Date();
+        let target = new Date();
+        if (presetKey === 'today') {
+            target = getDatePreset(0, 23, 59);
+        } else if (presetKey === 'tomorrow') {
+            target = getDatePreset(1, 23, 59);
+        } else if (presetKey === 'this_friday') {
+            const day = now.getDay();
+            const diff = (5 - day + 7) % 7 || 7;
+            target = getDatePreset(diff, 23, 59);
+        } else if (presetKey === 'next_monday') {
+            const day = now.getDay();
+            const diff = (1 - day + 7) % 7 || 7;
+            target = getDatePreset(diff, 23, 59);
+        } else if (presetKey === 'in_7_days') {
+            target = getDatePreset(7, 23, 59);
+        }
+
+        if (datePicker) datePicker.setDate(target, false);
+        if (timePicker) timePicker.setTime(23, 59, false);
+
+        document.querySelectorAll('.date-preset-chip').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.preset === presetKey);
+        });
+    }
+
+    document.querySelectorAll('.date-preset-chip').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            applyDatePreset(btn.dataset.preset);
+        });
+    });
+
     // Segmented tab
     document.getElementById('btnKindTask')?.addEventListener('click', () => setKind('task'));
     document.getElementById('btnKindEvent')?.addEventListener('click', () => setKind('event'));
@@ -206,12 +248,12 @@ export function initItemModalEvents() {
         const title = document.getElementById('itemTitleInput').value.trim();
 
         if (!subjectId) {
-            alert('Please select a course subject');
+            showToast({ message: 'Please select a course subject', type: 'error' });
             return;
         }
 
         if (!title) {
-            alert('Title is required');
+            showToast({ message: 'Title is required', type: 'error' });
             return;
         }
 

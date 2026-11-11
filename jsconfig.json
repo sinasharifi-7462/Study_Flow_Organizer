@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowJs": true,
+    "strict": false,
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "app/js/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src-tauri"
+  ]
+}

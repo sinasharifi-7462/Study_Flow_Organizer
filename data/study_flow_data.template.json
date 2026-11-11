@@ -3,7 +3,7 @@
   "metadata": {
     "version": "4.2.0",
     "appName": "Study Flow Organizer",
-    "lastSaved": "2026-11-07T12:00:00.000Z",
+    "lastSaved": "2026-11-08T12:00:00.000Z",
     "language": "en"
   },
   "user": {
@@ -75,9 +75,15 @@
         "name": "Course Folder",
         "icon": "📁"
       }
-    ]
+    ],
+    "tags": ["Core", "Elective", "Project", "Exam", "Lab"]
   },
   "subjects": [],
   "items": [],
-  "materials": []
+  "materials": [],
+  "trash": {
+    "subjects": [],
+    "items": [],
+    "materials": []
+  }
 }

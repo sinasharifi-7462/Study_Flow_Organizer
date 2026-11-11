@@ -106,6 +106,75 @@ export function sortItemsChronologically(items = []) {
 /**
  * Escape HTML special characters for safe string rendering.
  */
+/**
+ * Natural language quick task parser.
+ * Extracts title, kind (task vs event), and target due date from short user input.
+ * Example: "Fluid Midterm on friday" -> title: "Fluid Midterm", kind: "event", dueDate: Friday 23:59
+ */
+export function parseQuickTaskInput(rawInput) {
+    if (!rawInput || typeof rawInput !== 'string') return null;
+    let text = rawInput.trim();
+    if (!text) return null;
+
+    const now = new Date();
+    let targetDate = getDatePreset(1, 23, 59); // Default tomorrow 23:59
+
+    const weekdayMap = {
+        sunday: 0, sun: 0,
+        monday: 1, mon: 1,
+        tuesday: 2, tue: 2,
+        wednesday: 3, wed: 3,
+        thursday: 4, thu: 4,
+        friday: 5, fri: 5,
+        saturday: 6, sat: 6
+    };
+
+    // Check for "today"
+    if (/\b(today|tonight)\b/i.test(text)) {
+        targetDate = getDatePreset(0, 23, 59);
+        text = text.replace(/\b(due|on|by|for)?\s*(today|tonight)\b/gi, '').trim();
+    }
+    // Check for "tomorrow" or "tmrw"
+    else if (/\b(tomorrow|tmrw)\b/i.test(text)) {
+        targetDate = getDatePreset(1, 23, 59);
+        text = text.replace(/\b(due|on|by|for)?\s*(tomorrow|tmrw)\b/gi, '').trim();
+    }
+    // Check for "in N days"
+    else if (/\b(?:in|\+)\s*(\d+)\s*days?\b/i.test(text)) {
+        const match = text.match(/\b(?:in|\+)\s*(\d+)\s*days?\b/i);
+        const days = match ? parseInt(match[1], 10) : 1;
+        targetDate = getDatePreset(days, 23, 59);
+        text = text.replace(/\b(due|on|by|for)?\s*(?:in|\+)\s*\d+\s*days?\b/gi, '').trim();
+    }
+    // Check for weekdays
+    else {
+        for (const [name, targetDay] of Object.entries(weekdayMap)) {
+            const regex = new RegExp(`\\b(due|on|by|for)?\\s*(this|next)?\\s*${name}\\b`, 'i');
+            if (regex.test(text)) {
+                const currentDay = now.getDay();
+                let diff = (targetDay - currentDay + 7) % 7;
+                if (diff === 0) diff = 7;
+                targetDate = getDatePreset(diff, 23, 59);
+                text = text.replace(regex, '').trim();
+                break;
+            }
+        }
+    }
+
+    // Clean up trailing punctuation or conjunctions
+    text = text.replace(/\s+(due|on|by|for)$/i, '').trim();
+    if (!text) text = rawInput.trim();
+
+    // Determine kind
+    const isEvent = /\b(quiz|exam|midterm|final|presentation|review session)\b/i.test(text);
+
+    return {
+        title: text,
+        kind: isEvent ? 'event' : 'task',
+        dueDate: targetDate.toISOString()
+    };
+}
+
 export function escapeHtml(str) {
     if (str === null || str === undefined) return "";
     return String(str)

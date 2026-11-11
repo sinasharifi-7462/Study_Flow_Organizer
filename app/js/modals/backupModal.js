@@ -1,3 +1,5 @@
+import { mountModalHtml } from './modalMount.js';
+import { SETTINGS_MODAL_HTML } from './modalTemplates.js';
 /**
  * Backup, Export, Import & Standard Data Location Controller
  */
@@ -6,13 +8,222 @@ import { AppState, setAppStateData, persistCurrentState } from '../state.js';
 import { isServerConnected } from '../api.js';
 import { getAiConfig, saveAiConfig, fetchAiModels } from '../services/aiService.js';
 import { CustomSelect } from '../components/customSelect.js';
+import { applyPalette, getActivePaletteId, getSavedCustomColors, applyThemeStyle, getActiveThemeStyle } from '../theme.js';
+import { openTrashModal } from './trashModal.js';
+import { showToast, confirmAction } from '../toast.js';
 
 let aiProviderCustomSelect = null;
 let aiModelCustomSelect = null;
 
-export async function openBackupModal() {
+const SECTION_METADATA = {
+    appearance: {
+        title: 'Appearance & Theme',
+        subtitle: 'Customize theme styles, color palettes and interface accents'
+    },
+    ai: {
+        title: 'AI Assistant Configuration',
+        subtitle: 'Configure model providers, API credentials and verify connections'
+    },
+    storage: {
+        title: 'Storage & Snapshot Backups',
+        subtitle: 'Manage local AppData records, JSON exports and course recovery'
+    },
+    shortcuts: {
+        title: 'Keyboard Shortcuts Reference',
+        subtitle: 'Quick desktop keybindings and push-to-talk voice activation'
+    }
+};
+
+export function updateLandingBadges() {
+    // 1. Appearance badge
+    const activePalette = getActivePaletteId();
+    const currentTheme = getActiveThemeStyle();
+    const themeLabel = currentTheme === 'flat' ? 'Flat Minimal' : 'Glassmorphic';
+    const paletteNames = {
+        default: 'Teal Slate',
+        black: 'Minimal Black',
+        dark_blue: 'Flat Dark Blue',
+        nord_light: 'Clean Daylight',
+        custom: 'Custom 5-Color'
+    };
+    const paletteLabel = paletteNames[activePalette] || 'Teal Slate';
+    const appBadge = document.getElementById('landingAppearanceBadge');
+    if (appBadge) {
+        appBadge.textContent = `${themeLabel} • ${paletteLabel}`;
+    }
+
+    // 2. AI badge
+    const aiBadge = document.getElementById('landingAiBadge');
+    if (aiBadge) {
+        const config = getAiConfig();
+        if (config.apiKey && config.model) {
+            aiBadge.className = 'landing-card-badge status-configured';
+            aiBadge.textContent = `Active: ${config.model}`;
+        } else {
+            aiBadge.className = 'landing-card-badge status-unconfigured';
+            aiBadge.textContent = 'Key Required';
+        }
+    }
+
+    // 3. Storage badge
+    const storageBadge = document.getElementById('landingStorageBadge');
+    if (storageBadge) {
+        const isConnected = isServerConnected();
+        storageBadge.className = 'landing-card-badge ' + (isConnected ? 'status-configured' : 'status-unconfigured');
+        storageBadge.textContent = isConnected ? 'AppData Disk Active' : 'Offline LocalStorage';
+    }
+
+    // 4. Shortcuts badge
+    const shortcutsBadge = document.getElementById('landingShortcutsBadge');
+    if (shortcutsBadge) {
+        shortcutsBadge.textContent = '7 Shortcuts';
+    }
+}
+
+function morphContainerHeight(container, domChangeFn) {
+    if (!container) {
+        domChangeFn();
+        return;
+    }
+    const startHeight = container.getBoundingClientRect().height;
+    if (startHeight === 0) {
+        domChangeFn();
+        return;
+    }
+
+    container.style.height = startHeight + 'px';
+    container.style.overflow = 'hidden';
+
+    domChangeFn();
+
+    // Measure target height
+    container.style.height = 'auto';
+    const targetHeight = container.getBoundingClientRect().height;
+    container.style.height = startHeight + 'px';
+
+    // Force reflow
+    void container.offsetHeight;
+
+    container.style.transition = 'height 0.32s cubic-bezier(0.16, 1, 0.3, 1)';
+    container.style.height = targetHeight + 'px';
+
+    const cleanup = () => {
+        container.style.height = '';
+        container.style.transition = '';
+        container.style.overflow = '';
+        container.removeEventListener('transitionend', cleanup);
+    };
+    container.addEventListener('transitionend', cleanup);
+    setTimeout(cleanup, 360);
+}
+
+export function showSettingsLandingView(animate = true) {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+
+    const viewport = document.getElementById('settingsViewsViewport');
+    const updateViews = () => {
+        modal.classList.remove('mode-detail');
+        modal.classList.add('mode-landing');
+
+        const landingView = document.getElementById('settingsLandingView');
+        const detailView = document.getElementById('settingsDetailView');
+        const titleEl = document.getElementById('settingsModalTitle');
+
+        if (titleEl) titleEl.textContent = 'Settings';
+        if (detailView) detailView.classList.add('view-hidden');
+        if (landingView) landingView.classList.remove('view-hidden');
+
+        updateLandingBadges();
+    };
+
+    if (animate && viewport) {
+        morphContainerHeight(viewport, updateViews);
+    } else {
+        updateViews();
+    }
+}
+
+export function showSettingsDetailView(tabName = 'appearance', animate = true) {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+
+    const viewport = document.getElementById('settingsViewsViewport');
+    const updateViews = () => {
+        modal.classList.remove('mode-landing');
+        modal.classList.add('mode-detail');
+
+        const landingView = document.getElementById('settingsLandingView');
+        const detailView = document.getElementById('settingsDetailView');
+
+        if (landingView) landingView.classList.add('view-hidden');
+        if (detailView) detailView.classList.remove('view-hidden');
+
+        switchSettingsTab(tabName, false);
+    };
+
+    if (animate && viewport) {
+        morphContainerHeight(viewport, updateViews);
+    } else {
+        updateViews();
+    }
+}
+
+export function switchSettingsTab(tabName, animate = true) {
+    const modal = document.getElementById('settingsModal');
+    if (!modal) return;
+
+    if (tabName === 'overview') {
+        showSettingsLandingView(animate);
+        return;
+    }
+
+    const tabs = modal.querySelectorAll('.settings-tab-btn');
+    const panes = modal.querySelectorAll('.settings-tab-pane');
+    const tabsBody = document.getElementById('settingsTabsBody');
+
+    const updatePanes = () => {
+        tabs.forEach(tab => {
+            const isActive = tab.dataset.tab === tabName;
+            tab.classList.toggle('active', isActive);
+            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        });
+
+        panes.forEach(pane => {
+            const isActive = pane.dataset.pane === tabName;
+            pane.classList.toggle('active', isActive);
+        });
+    };
+
+    if (animate && tabsBody && modal.classList.contains('mode-detail')) {
+        morphContainerHeight(tabsBody, updatePanes);
+    } else {
+        updatePanes();
+    }
+}
+
+export async function openBackupModal(initialTab = null) {
+    mountModalHtml('settingsModal', SETTINGS_MODAL_HTML);
     const modal = document.getElementById('settingsModal') || document.getElementById('backupModal');
     if (!modal) return;
+
+    // Strict check: if initialTab is an Event (e.g. from header settings button click), open landing view
+    const targetTab = (typeof initialTab === 'string' && initialTab.trim() !== '') ? initialTab.trim() : null;
+
+    if (targetTab && targetTab !== 'overview') {
+        showSettingsDetailView(targetTab, false);
+    } else {
+        showSettingsLandingView(false);
+    }
+
+    // Sync theme style options
+    const currentTheme = getActiveThemeStyle();
+    const optGlass = document.getElementById('themeOptionGlass');
+    const optFlat = document.getElementById('themeOptionFlat');
+    if (optGlass && optFlat) {
+        optGlass.classList.toggle('is-active', currentTheme !== 'flat');
+        optFlat.classList.toggle('is-active', currentTheme === 'flat');
+    }
 
     const isConnected = isServerConnected();
     const statusDot = document.getElementById('modalDiskSyncDot');
@@ -20,8 +231,8 @@ export async function openBackupModal() {
     const dataDirText = document.getElementById('modalDataDirText');
 
     if (isConnected) {
-        if (statusDot) statusDot.style.background = '#2dd4bf';
-        if (statusText) statusText.textContent = '🟢 Connected to standard AppData directory on disk';
+        if (statusDot) statusDot.style.background = 'var(--color-success)';
+        if (statusText) statusText.textContent = 'Connected (AppData)';
         try {
             const res = await fetch('/api/health');
             const data = await res.json();
@@ -30,15 +241,21 @@ export async function openBackupModal() {
             }
         } catch (e) {}
     } else {
-        if (statusDot) statusDot.style.background = '#772E25';
-        if (statusText) statusText.textContent = '🟠 Standalone Browser Mode (localStorage)';
+        if (statusDot) statusDot.style.background = 'var(--color-urgent)';
+        if (statusText) statusText.textContent = 'Local (Browser Storage)';
         if (dataDirText) dataDirText.textContent = 'Browser Internal LocalStorage';
     }
 
     // Populate AI Assistant Settings
     populateAiSettingsForm();
+    updateSettingsPaletteUI();
+    updateLandingBadges();
 
-    modal.classList.add('is-active');
+    // Smooth opening animation without instant jump
+    requestAnimationFrame(() => {
+        modal.classList.remove('is-closing');
+        modal.classList.add('is-active');
+    });
 }
 
 /**
@@ -102,9 +319,43 @@ function populateAiSettingsForm() {
     if (statusText) statusText.textContent = '';
 }
 
+export function updateSettingsPaletteUI() {
+    const activePalette = getActivePaletteId();
+    document.querySelectorAll('.palette-card-option').forEach(card => {
+        card.classList.toggle('is-active', card.dataset.palette === activePalette);
+    });
+
+    const customWrap = document.getElementById('customPaletteControlsWrap');
+    if (customWrap) {
+        customWrap.classList.toggle('hidden', activePalette !== 'custom');
+    }
+
+    const custom = getSavedCustomColors();
+    const setCol = (id, val) => {
+        const el = document.getElementById(id);
+        if (el && val) el.value = val;
+    };
+    setCol('pickerColorPrimary', custom.primary);
+    setCol('pickerColorCanvas', custom.canvas);
+    setCol('pickerColorSurface', custom.surface);
+    setCol('pickerColorText', custom.text);
+    setCol('pickerColorUrgent', custom.urgent);
+
+    const trashBadge = document.getElementById('settingsTrashCountBadge');
+    if (trashBadge) {
+        const count = AppState.trash?.subjects?.length || 0;
+        trashBadge.textContent = `${count} course${count === 1 ? '' : 's'}`;
+    }
+}
+
 export function closeBackupModal() {
     const modal = document.getElementById('settingsModal') || document.getElementById('backupModal');
-    if (modal) modal.classList.remove('is-active');
+    if (!modal) return;
+    modal.classList.add('is-closing');
+    setTimeout(() => {
+        modal.classList.remove('is-active');
+        modal.classList.remove('is-closing');
+    }, 220);
 }
 
 export function exportDataToJson() {
@@ -134,6 +385,43 @@ export function exportDataToJson() {
 }
 
 export function initBackupModalEvents() {
+    mountModalHtml('settingsModal', SETTINGS_MODAL_HTML);
+
+    // 2x2 Minimalist Landing Card clicks with smooth morph expansion
+    document.querySelectorAll('#settingsModal .settings-landing-card').forEach(card => {
+        card.addEventListener('click', () => {
+            if (card.dataset.target) showSettingsDetailView(card.dataset.target, true);
+        });
+        card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                if (card.dataset.target) showSettingsDetailView(card.dataset.target, true);
+            }
+        });
+    });
+
+    // Tab navigation buttons with smooth morph expansion
+    document.querySelectorAll('#settingsModal .settings-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.dataset.tab) switchSettingsTab(btn.dataset.tab, true);
+        });
+    });
+
+    // Theme style switcher (Glass vs Flat)
+    document.getElementById('themeOptionGlass')?.addEventListener('click', () => {
+        applyThemeStyle('glass');
+        document.getElementById('themeOptionGlass')?.classList.add('is-active');
+        document.getElementById('themeOptionFlat')?.classList.remove('is-active');
+    });
+    document.getElementById('themeOptionFlat')?.addEventListener('click', () => {
+        applyThemeStyle('flat');
+        document.getElementById('themeOptionGlass')?.classList.remove('is-active');
+        document.getElementById('themeOptionFlat')?.classList.add('is-active');
+    });
+
+    // Modal close buttons
+    document.getElementById('settingsModalCloseBtn')?.addEventListener('click', closeBackupModal);
+    document.getElementById('btnCloseSettings')?.addEventListener('click', closeBackupModal);
     document.getElementById('backupModalCloseBtn')?.addEventListener('click', closeBackupModal);
     document.getElementById('btnCloseBackupModal')?.addEventListener('click', closeBackupModal);
 
@@ -144,7 +432,7 @@ export function initBackupModalEvents() {
         try {
             await fetch('/api/open-data-dir', { method: 'POST' });
         } catch (e) {
-            alert('Could not open AppData folder: ' + e.message);
+            showToast({ message: 'Could not open AppData folder: ' + e.message, type: 'error' });
         }
     });
 
@@ -164,10 +452,10 @@ export function initBackupModalEvents() {
                 const parsed = JSON.parse(evt.target.result);
                 setAppStateData(parsed);
                 await persistCurrentState();
-                alert('Data restored successfully!');
+                showToast({ message: 'Data restored successfully!', type: 'success' });
                 closeBackupModal();
             } catch (err) {
-                alert('Import error: ' + err.message);
+                showToast({ message: 'Import error: ' + err.message, type: 'error' });
             }
         };
         reader.readAsText(file);
@@ -176,14 +464,59 @@ export function initBackupModalEvents() {
 
     // Clear All Data
     document.getElementById('btnWipeData')?.addEventListener('click', async () => {
-        if (confirm("Are you sure you want to clear all data? This will reset your workspace to a clean slate.")) {
+        confirmAction({
+            message: "Clear all data? This will reset your workspace to a clean slate.",
+            confirmText: "Wipe Data",
+            isDanger: true,
+            onConfirm: async () => {
+                AppState.subjects = [];
+                AppState.items = [];
+                AppState.materials = [];
+                await persistCurrentState();
+                showToast({ message: 'Workspace cleared', type: 'info' });
+                closeBackupModal();
+            }
+        });
+        return;
+        if (false) {
             AppState.subjects = [];
             AppState.items = [];
             AppState.materials = [];
             await persistCurrentState();
-            alert('Workspace cleared.');
+            showToast({ message: 'Workspace cleared', type: 'info' });
             closeBackupModal();
         }
+    });
+
+    // Palette selection events (Req 3)
+    document.querySelectorAll('.palette-card-option').forEach(card => {
+        card.addEventListener('click', () => {
+            const paletteId = card.dataset.palette;
+            applyPalette(paletteId);
+            updateSettingsPaletteUI();
+        });
+    });
+
+    // Custom 5-Color Pickers
+    const onCustomColorChange = () => {
+        const custom = {
+            primary: document.getElementById('pickerColorPrimary')?.value || '#197278',
+            canvas: document.getElementById('pickerColorCanvas')?.value || '#1e2e2c',
+            surface: document.getElementById('pickerColorSurface')?.value || '#283D3B',
+            text: document.getElementById('pickerColorText')?.value || '#EDDDD4',
+            urgent: document.getElementById('pickerColorUrgent')?.value || '#C44536'
+        };
+        applyPalette('custom', custom);
+        updateSettingsPaletteUI();
+    };
+
+    ['pickerColorPrimary', 'pickerColorCanvas', 'pickerColorSurface', 'pickerColorText', 'pickerColorUrgent'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', onCustomColorChange);
+    });
+
+    // Open Trash Modal from Settings (Req 7)
+    document.getElementById('btnSettingsOpenTrash')?.addEventListener('click', () => {
+        openTrashModal();
     });
 
     // --- AI Configuration Event Listeners ---
@@ -214,9 +547,9 @@ export function initBackupModalEvents() {
                 if (baseUrlWrap) baseUrlWrap.classList.toggle('hidden', val !== 'custom');
                 if (apiKeyHint) {
                     if (val === 'gemini') {
-                        apiKeyHint.innerHTML = 'For Gemini, get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--palette-stormy-teal);">Google AI Studio</a>.';
+                        apiKeyHint.innerHTML = 'For Gemini, get a free key from <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--color-primary);">Google AI Studio</a>.';
                     } else if (val === 'openai') {
-                        apiKeyHint.innerHTML = 'Get your OpenAI key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--palette-stormy-teal);">OpenAI Platform</a>.';
+                        apiKeyHint.innerHTML = 'Get your OpenAI key from <a href="https://platform.openai.com/api-keys" target="_blank" style="color: var(--color-primary);">OpenAI Platform</a>.';
                     } else {
                         apiKeyHint.innerHTML = 'Compatible with OpenRouter, Groq, Ollama, DeepSeek, or any OpenAI-compatible API.';
                     }
@@ -255,7 +588,7 @@ export function initBackupModalEvents() {
         const baseUrl = document.getElementById('aiBaseUrlInput')?.value.trim() || '';
 
         if (!apiKey) {
-            alert('Please enter an API Key first before fetching models.');
+            showToast({ message: 'Please enter an API Key first before fetching models.', type: 'warning' });
             apiKeyInput?.focus();
             return;
         }
@@ -263,7 +596,7 @@ export function initBackupModalEvents() {
         btnFetchModels.disabled = true;
         btnFetchModels.textContent = '🔄 Fetching...';
         if (modelStatusText) {
-            modelStatusText.style.color = 'var(--palette-stormy-teal)';
+            modelStatusText.style.color = 'var(--color-primary)';
             modelStatusText.textContent = 'Connecting to API and loading available models...';
         }
 
@@ -314,10 +647,10 @@ export function initBackupModalEvents() {
         } catch (err) {
             console.error('[Fetch Models Error]', err);
             if (modelStatusText) {
-                modelStatusText.style.color = 'var(--palette-tomato-jam)';
+                modelStatusText.style.color = 'var(--color-urgent)';
                 modelStatusText.textContent = `❌ ${err.message}`;
             }
-            alert(`Could not fetch models: ${err.message}`);
+            showToast({ message: `Could not fetch models: ${err.message}`, type: 'error' });
         } finally {
             btnFetchModels.disabled = false;
             btnFetchModels.textContent = '🔄 Fetch Models from API';
@@ -331,7 +664,7 @@ export function initBackupModalEvents() {
         const baseUrl = document.getElementById('aiBaseUrlInput')?.value.trim() || '';
 
         if (!apiKey) {
-            alert('Please enter an API Key first.');
+            showToast({ message: 'Please enter an API Key first.', type: 'warning' });
             apiKeyInput?.focus();
             return;
         }
@@ -341,9 +674,9 @@ export function initBackupModalEvents() {
 
         try {
             const models = await fetchAiModels(provider, apiKey, baseUrl);
-            alert(`✅ Connection successful! Found ${models.length} model(s).`);
+            showToast({ message: `Connection successful! Found ${models.length} model(s).`, type: 'success' });
         } catch (err) {
-            alert(`❌ Connection failed: ${err.message}`);
+            showToast({ message: `Connection failed: ${err.message}`, type: 'error' });
         } finally {
             btnTestAiConnection.disabled = false;
             btnTestAiConnection.textContent = 'Test Connection';
@@ -358,7 +691,7 @@ export function initBackupModalEvents() {
         const model = aiModelCustomSelect ? aiModelCustomSelect.getValue() : '';
 
         if (!apiKey) {
-            alert('Please enter an API key.');
+            showToast({ message: 'Please enter an API key.', type: 'warning' });
             apiKeyInput?.focus();
             return;
         }
@@ -383,6 +716,6 @@ export function initBackupModalEvents() {
             badge.textContent = `${model || provider}`;
         }
 
-        alert('✅ AI settings saved successfully!');
+        showToast({ message: 'AI settings saved successfully!', type: 'success' });
     });
 }
