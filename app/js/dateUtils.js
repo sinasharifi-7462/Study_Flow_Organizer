@@ -13,8 +13,33 @@ export const MONTH_NAMES = [
  * Format a Date object into human-readable strings.
  */
 export function formatDate(dateInput) {
+    if (!dateInput) {
+        return {
+            year: null,
+            month: null,
+            day: null,
+            weekday: '',
+            timeStr: '',
+            shortDate: '',
+            primaryDisplay: 'No deadline',
+            fullDisplay: 'No deadline',
+            iso: null
+        };
+    }
     let dateObj = dateInput instanceof Date ? dateInput : new Date(dateInput);
-    if (isNaN(dateObj.getTime())) dateObj = new Date();
+    if (isNaN(dateObj.getTime())) {
+        return {
+            year: null,
+            month: null,
+            day: null,
+            weekday: '',
+            timeStr: '',
+            shortDate: '',
+            primaryDisplay: 'No deadline',
+            fullDisplay: 'No deadline',
+            iso: null
+        };
+    }
 
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth();
@@ -47,7 +72,27 @@ export function formatDate(dateInput) {
  * Calculate remaining time and smart urgency classification for a deadline.
  */
 export function calculateRemainingTime(dueDateInput) {
+    if (!dueDateInput) {
+        return {
+            diffMs: Infinity,
+            diffHours: Infinity,
+            diffDays: Infinity,
+            friendlyText: "No deadline",
+            urgencyLevel: "none",
+            isUrgent: false
+        };
+    }
     const targetDate = dueDateInput instanceof Date ? dueDateInput : new Date(dueDateInput);
+    if (isNaN(targetDate.getTime())) {
+        return {
+            diffMs: Infinity,
+            diffHours: Infinity,
+            diffDays: Infinity,
+            friendlyText: "No deadline",
+            urgencyLevel: "none",
+            isUrgent: false
+        };
+    }
     const now = new Date();
     const diffMs = targetDate.getTime() - now.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
@@ -98,9 +143,19 @@ export function getDatePreset(daysAhead = 0, hours = 23, minutes = 59) {
 
 /**
  * Sort items chronologically by due date ascending.
+ * Deadlineless items are sorted after dated items.
  */
 export function sortItemsChronologically(items = []) {
-    return [...items].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    return [...items].sort((a, b) => {
+        const aHas = Boolean(a && a.dueDate);
+        const bHas = Boolean(b && b.dueDate);
+        if (aHas && bHas) {
+            return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        }
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return (a?.createdAt || '').localeCompare(b?.createdAt || '');
+    });
 }
 
 /**
@@ -110,53 +165,66 @@ export function sortItemsChronologically(items = []) {
  * Natural language quick task parser.
  * Extracts title, kind (task vs event), and target due date from short user input.
  * Example: "Fluid Midterm on friday" -> title: "Fluid Midterm", kind: "event", dueDate: Friday 23:59
+ * Example: "Buy notebooks" with defaultDeadlineless=true -> title: "Buy notebooks", kind: "task", dueDate: null
  */
-export function parseQuickTaskInput(rawInput) {
+export function parseQuickTaskInput(rawInput, defaultDeadlineless = false) {
     if (!rawInput || typeof rawInput !== 'string') return null;
     let text = rawInput.trim();
     if (!text) return null;
 
-    const now = new Date();
-    let targetDate = getDatePreset(1, 23, 59); // Default tomorrow 23:59
+    let targetDate = defaultDeadlineless ? null : getDatePreset(1, 23, 59); // Default tomorrow or deadlineless
+    let hasExplicitDate = false;
 
-    const weekdayMap = {
-        sunday: 0, sun: 0,
-        monday: 1, mon: 1,
-        tuesday: 2, tue: 2,
-        wednesday: 3, wed: 3,
-        thursday: 4, thu: 4,
-        friday: 5, fri: 5,
-        saturday: 6, sat: 6
-    };
+    // Check for explicit "no deadline" / "someday" / "whenever"
+    if (/\b(no deadline|deadlineless|someday|anytime|whenever|no date|without deadline)\b/i.test(text)) {
+        targetDate = null;
+        text = text.replace(/\b(no deadline|deadlineless|someday|anytime|whenever|no date|without deadline)\b/gi, '').trim();
+        hasExplicitDate = true;
+    } else {
+        const now = new Date();
+        const weekdayMap = {
+            sunday: 0, sun: 0,
+            monday: 1, mon: 1,
+            tuesday: 2, tue: 2,
+            wednesday: 3, wed: 3,
+            thursday: 4, thu: 4,
+            friday: 5, fri: 5,
+            saturday: 6, sat: 6
+        };
 
-    // Check for "today"
-    if (/\b(today|tonight)\b/i.test(text)) {
-        targetDate = getDatePreset(0, 23, 59);
-        text = text.replace(/\b(due|on|by|for)?\s*(today|tonight)\b/gi, '').trim();
-    }
-    // Check for "tomorrow" or "tmrw"
-    else if (/\b(tomorrow|tmrw)\b/i.test(text)) {
-        targetDate = getDatePreset(1, 23, 59);
-        text = text.replace(/\b(due|on|by|for)?\s*(tomorrow|tmrw)\b/gi, '').trim();
-    }
-    // Check for "in N days"
-    else if (/\b(?:in|\+)\s*(\d+)\s*days?\b/i.test(text)) {
-        const match = text.match(/\b(?:in|\+)\s*(\d+)\s*days?\b/i);
-        const days = match ? parseInt(match[1], 10) : 1;
-        targetDate = getDatePreset(days, 23, 59);
-        text = text.replace(/\b(due|on|by|for)?\s*(?:in|\+)\s*\d+\s*days?\b/gi, '').trim();
-    }
-    // Check for weekdays
-    else {
-        for (const [name, targetDay] of Object.entries(weekdayMap)) {
-            const regex = new RegExp(`\\b(due|on|by|for)?\\s*(this|next)?\\s*${name}\\b`, 'i');
-            if (regex.test(text)) {
-                const currentDay = now.getDay();
-                let diff = (targetDay - currentDay + 7) % 7;
-                if (diff === 0) diff = 7;
-                targetDate = getDatePreset(diff, 23, 59);
-                text = text.replace(regex, '').trim();
-                break;
+        // Check for "today"
+        if (/\b(today|tonight)\b/i.test(text)) {
+            targetDate = getDatePreset(0, 23, 59);
+            text = text.replace(/\b(due|on|by|for)?\s*(today|tonight)\b/gi, '').trim();
+            hasExplicitDate = true;
+        }
+        // Check for "tomorrow" or "tmrw"
+        else if (/\b(tomorrow|tmrw)\b/i.test(text)) {
+            targetDate = getDatePreset(1, 23, 59);
+            text = text.replace(/\b(due|on|by|for)?\s*(tomorrow|tmrw)\b/gi, '').trim();
+            hasExplicitDate = true;
+        }
+        // Check for "in N days"
+        else if (/\b(?:in|\+)\s*(\d+)\s*days?\b/i.test(text)) {
+            const match = text.match(/\b(?:in|\+)\s*(\d+)\s*days?\b/i);
+            const days = match ? parseInt(match[1], 10) : 1;
+            targetDate = getDatePreset(days, 23, 59);
+            text = text.replace(/\b(due|on|by|for)?\s*(?:in|\+)\s*\d+\s*days?\b/gi, '').trim();
+            hasExplicitDate = true;
+        }
+        // Check for weekdays
+        else {
+            for (const [name, targetDay] of Object.entries(weekdayMap)) {
+                const regex = new RegExp(`\\b(due|on|by|for)?\\s*(this|next)?\\s*${name}\\b`, 'i');
+                if (regex.test(text)) {
+                    const currentDay = now.getDay();
+                    let diff = (targetDay - currentDay + 7) % 7;
+                    if (diff === 0) diff = 7;
+                    targetDate = getDatePreset(diff, 23, 59);
+                    text = text.replace(regex, '').trim();
+                    hasExplicitDate = true;
+                    break;
+                }
             }
         }
     }
@@ -171,7 +239,7 @@ export function parseQuickTaskInput(rawInput) {
     return {
         title: text,
         kind: isEvent ? 'event' : 'task',
-        dueDate: targetDate.toISOString()
+        dueDate: targetDate ? targetDate.toISOString() : null
     };
 }
 

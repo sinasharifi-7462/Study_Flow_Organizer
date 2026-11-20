@@ -24,9 +24,9 @@
  * @property {string} typeId - Reference to taskTypes or eventTypes config
  * @property {string} typeName - Display name (e.g. "HW", "Quiz", "Project")
  * @property {string} typeIcon - Display icon (Vector SVG or emoji)
- * @property {string} subjectId - Foreign key referencing Subject.id
+ * @property {string | null} [subjectId] - Foreign key referencing Subject.id, or null for general/free tasks
  * @property {string} title - Task or event title
- * @property {string} dueDate - ISO-8601 deadline/date string
+ * @property {string | null} [dueDate] - ISO-8601 deadline/date string or null for deadlineless tasks
  * @property {boolean} inProgress - Whether item is actively in progress
  * @property {boolean} completed - Whether item is completed
  * @property {ItemExtraInfo} extraInfo - Additional metadata

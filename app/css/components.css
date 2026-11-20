@@ -693,6 +693,205 @@ body.theme-flat .main-toolbar {
     }
 }
 
+/* --------------------------------------------------------------------------
+   MAXIMIZED WINDOW & WIDESCREEN SCALING FOR SECONDARY CONTROL RIBBON
+   -------------------------------------------------------------------------- */
+.is-window-maximized .main-toolbar,
+.is-maximized .main-toolbar {
+    max-width: none;
+    padding: 10px 18px;
+    gap: 10px;
+}
+
+.is-window-maximized .toolbar-secondary-row,
+.is-maximized .toolbar-secondary-row {
+    gap: 16px;
+    padding-top: 8px;
+}
+
+.is-window-maximized .filter-pills-wrap,
+.is-maximized .filter-pills-wrap {
+    gap: 6px;
+}
+
+.is-window-maximized .filter-pill,
+.is-maximized .filter-pill {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 0.82rem;
+    gap: 6px;
+    border-radius: 7px;
+}
+
+.is-window-maximized .filter-pill .pill-count,
+.is-maximized .filter-pill .pill-count {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 0.72rem;
+    border-radius: 9px;
+}
+
+.is-window-maximized .toolbar-divider,
+.is-maximized .toolbar-divider {
+    height: 20px;
+    margin: 0 4px;
+}
+
+.is-window-maximized .tags-filter-strip-row,
+.is-maximized .tags-filter-strip-row {
+    gap: 8px;
+}
+
+.is-window-maximized .tags-filter-title,
+.is-maximized .tags-filter-title {
+    font-size: 0.76rem;
+}
+
+.is-window-maximized .tag-filter-pill,
+.is-maximized .tag-filter-pill {
+    height: 26px;
+    padding: 0 10px;
+    font-size: 0.76rem;
+    border-radius: 6px;
+}
+
+.is-window-maximized .btn-add-tag-filter,
+.is-maximized .btn-add-tag-filter {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+}
+
+.is-window-maximized .btn-add-tag-filter svg,
+.is-maximized .btn-add-tag-filter svg {
+    width: 13px;
+    height: 13px;
+}
+
+@media (min-width: 1360px) {
+    .main-toolbar {
+        max-width: none;
+        padding: 10px 18px;
+        gap: 10px;
+    }
+
+    .toolbar-secondary-row {
+        gap: 16px;
+        padding-top: 8px;
+    }
+
+    .filter-pills-wrap {
+        gap: 6px;
+    }
+
+    .filter-pill {
+        height: 30px;
+        padding: 0 12px;
+        font-size: 0.82rem;
+        gap: 6px;
+        border-radius: 7px;
+    }
+
+    .filter-pill .pill-count {
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        font-size: 0.72rem;
+        border-radius: 9px;
+    }
+
+    .toolbar-divider {
+        height: 20px;
+        margin: 0 4px;
+    }
+
+    .tags-filter-strip-row {
+        gap: 8px;
+    }
+
+    .tags-filter-title {
+        font-size: 0.76rem;
+    }
+
+    .tag-filter-pill {
+        height: 26px;
+        padding: 0 10px;
+        font-size: 0.76rem;
+        border-radius: 6px;
+    }
+
+    .btn-add-tag-filter {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+    }
+
+    .btn-add-tag-filter svg {
+        width: 13px;
+        height: 13px;
+    }
+}
+
+@media (min-width: 1700px) {
+    .main-toolbar {
+        padding: 12px 22px;
+        gap: 12px;
+    }
+
+    .toolbar-secondary-row {
+        gap: 20px;
+        padding-top: 10px;
+    }
+
+    .filter-pills-wrap {
+        gap: 8px;
+    }
+
+    .filter-pill {
+        height: 33px;
+        padding: 0 15px;
+        font-size: 0.86rem;
+        gap: 7px;
+        border-radius: 8px;
+    }
+
+    .filter-pill .pill-count {
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
+        font-size: 0.75rem;
+        border-radius: 10px;
+    }
+
+    .toolbar-divider {
+        height: 22px;
+        margin: 0 6px;
+    }
+
+    .tags-filter-title {
+        font-size: 0.8rem;
+    }
+
+    .tag-filter-pill {
+        height: 28px;
+        padding: 0 12px;
+        font-size: 0.8rem;
+        border-radius: 6px;
+    }
+
+    .btn-add-tag-filter {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+    }
+
+    .btn-add-tag-filter svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
 .stat-item {
     display: flex;
     align-items: center;

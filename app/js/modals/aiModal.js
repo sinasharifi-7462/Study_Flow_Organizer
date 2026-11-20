@@ -36,6 +36,31 @@ let activeAudioPlayer = null;
 let currentProposedActions = [];
 
 /**
+ * Safely parses AI dueDate strings as local wall-clock time.
+ * Prevents UTC timezone shift (e.g. 23:59 IRST shifting by +3:30 to 03:29 the next day).
+ */
+export function parseAiDueDate(dueDateStr) {
+    if (!dueDateStr) return new Date();
+    if (dueDateStr instanceof Date) return dueDateStr;
+
+    const str = String(dueDateStr).trim();
+    // Match YYYY-MM-DD and optional HH:mm:ss
+    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?/);
+    if (match) {
+        const year = parseInt(match[1], 10);
+        const month = parseInt(match[2], 10) - 1; // 0-indexed in JS Date
+        const day = parseInt(match[3], 10);
+        const hours = match[4] !== undefined ? parseInt(match[4], 10) : 23;
+        const minutes = match[5] !== undefined ? parseInt(match[5], 10) : 59;
+        const seconds = match[6] !== undefined ? parseInt(match[6], 10) : 0;
+        return new Date(year, month, day, hours, minutes, seconds);
+    }
+
+    const d = new Date(dueDateStr);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
+
+/**
  * Open AI Schedule Assistant Modal
  * Resets state clean as new, and exposes Last Changes / Undo if a prior session exists.
  */
@@ -50,6 +75,7 @@ export function openAiModal() {
 
     discardRecordedAudio();
     hideAiError();
+    hideAiNotice();
 
     const previewContainer = document.getElementById('aiPreviewContainer');
     if (previewContainer) previewContainer.classList.add('hidden');
@@ -61,6 +87,7 @@ export function openAiModal() {
     // 2. Update context & status
     updateAiContextDisplay();
     updateModelStatusBadge();
+    renderAiFallbackPipeline();
     updateHistoryActionsUi();
 
     modal.classList.add('is-active');
@@ -94,12 +121,106 @@ function updateModelStatusBadge() {
     const config = getAiConfig();
     if (config.apiKey && config.model) {
         badge.className = 'ai-model-badge badge-connected';
-        badge.textContent = `${config.model}`;
-        badge.title = `Connected: ${config.provider} (${config.model})`;
+        const cleanModel = String(config.model).replace(/^models\//, '');
+        badge.textContent = cleanModel;
+        badge.title = `Connected: ${config.provider || 'AI'} (${cleanModel}) · Click to open Settings`;
     } else {
         badge.className = 'ai-model-badge badge-unconfigured';
-        badge.textContent = 'Configure API in Settings';
+        badge.textContent = 'Setup API';
         badge.title = 'Click to open Settings and configure API key';
+    }
+    renderAiFallbackPipeline();
+}
+
+/**
+ * Renders graphical pipeline view for multi-model fallback system (Req 6)
+ */
+function renderAiFallbackPipeline(statusUpdate = null) {
+    const container = document.getElementById('aiPipelineNodesFlow');
+    if (!container) return;
+
+    const config = getAiConfig();
+    const primaryModel = (config.model || 'gemini-3.5-flash-lite').replace(/^models\//, '');
+    const fallbacks = (Array.isArray(config.fallbackModels) && config.fallbackModels.length > 0)
+        ? config.fallbackModels.map(m => String(m).replace(/^models\//, ''))
+        : ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3-flash-preview'];
+
+    // Deduplicate primary from fallbacks
+    const chain = [primaryModel, ...fallbacks.filter(f => f !== primaryModel)];
+
+    const maxVisibleNodes = 3;
+    const visibleNodes = chain.slice(0, maxVisibleNodes);
+    const extraCount = chain.length - maxVisibleNodes;
+
+    let nodesHtml = '';
+
+    visibleNodes.forEach((modelName, index) => {
+        const isPrimary = index === 0;
+        let nodeClass = isPrimary ? 'node-primary' : 'node-backup';
+        let statusTag = isPrimary ? 'Primary' : `Backup ${index}`;
+        let statusIndicator = `<span class="pipeline-pulse-dot"></span>`;
+
+        if (statusUpdate) {
+            if (statusUpdate.modelUsed && statusUpdate.modelUsed.includes(modelName)) {
+                nodeClass += ' is-success-active';
+                statusTag = '✓ Active Model';
+                statusIndicator = `<span class="pipeline-check-icon">✓</span>`;
+            } else if (statusUpdate.failedModel && statusUpdate.failedModel.includes(modelName)) {
+                nodeClass += ' is-failed-skip';
+                statusTag = statusUpdate.status ? `${statusUpdate.status} Overload` : 'Failover';
+                statusIndicator = `<span class="pipeline-fail-icon">✕</span>`;
+            } else if (statusUpdate.nextModel && statusUpdate.nextModel.includes(modelName)) {
+                nodeClass += ' is-failing-over';
+                statusTag = 'Active Failover';
+                statusIndicator = `<span class="pipeline-active-dot"></span>`;
+            }
+        }
+
+        nodesHtml += `
+            <div class="ai-pipeline-node ${nodeClass}" title="${escapeHtml(modelName)}">
+                <div class="pipeline-node-indicator">${statusIndicator}</div>
+                <div class="pipeline-node-info">
+                    <span class="pipeline-node-tag">${statusTag}</span>
+                    <span class="pipeline-node-name">${escapeHtml(modelName)}</span>
+                </div>
+            </div>
+        `;
+
+        if (index < visibleNodes.length - 1 || extraCount > 0) {
+            nodesHtml += `
+                <div class="ai-pipeline-arrow">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </div>
+            `;
+        }
+    });
+
+    if (extraCount > 0) {
+        nodesHtml += `
+            <div class="ai-pipeline-node node-extra" title="${escapeHtml(chain.slice(maxVisibleNodes).join(', '))}">
+                <span class="pipeline-node-tag">+${extraCount} More</span>
+                <span class="pipeline-node-name">Auto-Chained</span>
+            </div>
+        `;
+    }
+
+    container.innerHTML = nodesHtml;
+
+    // Update status badge
+    const badge = document.getElementById('aiPipelineStatusBadge');
+    if (badge) {
+        if (statusUpdate?.fallbackTriggered) {
+            badge.className = 'ai-pipeline-badge badge-fallback-fired';
+            badge.textContent = `Failover Active (${statusUpdate.modelUsed})`;
+        } else if (statusUpdate?.failedModel) {
+            badge.className = 'ai-pipeline-badge badge-failing-over';
+            badge.textContent = `Failing over to ${statusUpdate.nextModel}...`;
+        } else {
+            badge.className = 'ai-pipeline-badge';
+            badge.textContent = '503/429 Auto-Failover';
+        }
     }
 }
 
@@ -464,11 +585,28 @@ function hideAiError() {
     }
 }
 
+function showAiNotice(message) {
+    const banner = document.getElementById('aiNoticeBanner');
+    if (banner) {
+        banner.textContent = message;
+        banner.classList.remove('hidden');
+    }
+}
+
+function hideAiNotice() {
+    const banner = document.getElementById('aiNoticeBanner');
+    if (banner) {
+        banner.classList.add('hidden');
+        banner.textContent = '';
+    }
+}
+
 /**
  * Handle Analysis Trigger
  */
 async function handleAnalyze() {
     hideAiError();
+    hideAiNotice();
     if (isRecording) {
         stopVoiceRecording();
     }
@@ -497,37 +635,76 @@ async function handleAnalyze() {
             audioMimeType: recordedAudioMimeType
         } : null;
 
-        const result = await generateAiSchedulePlan(promptText, AppState, audioPayload);
+        const onFallbackNotice = ({ failedModel, nextModel, status, error }) => {
+            renderAiFallbackPipeline({ failedModel, nextModel, status });
+
+            let reason = 'temporary disruption';
+            if (status === 503) reason = 'high demand (503)';
+            else if (status === 429) reason = 'rate limited (429)';
+            else if (status) reason = `status ${status}`;
+            else if (error) reason = error;
+
+            setThinkingState(
+                true,
+                `High demand on ${failedModel} (${reason}). Switching to ${nextModel}...`,
+                'Automatic model fallback in progress'
+            );
+        };
+
+        const result = await generateAiSchedulePlan(promptText, AppState, audioPayload, onFallbackNotice);
         setThinkingState(false);
+
+        renderAiFallbackPipeline({
+            modelUsed: result?.modelUsed,
+            fallbackTriggered: result?.fallbackTriggered,
+            attemptedModels: result?.attemptedModels
+        });
 
         if (!result || !Array.isArray(result.actions) || result.actions.length === 0) {
             showAiError('No schedule actions could be detected. Please try rephrasing your instruction.');
             return;
         }
 
+        if (result.fallbackTriggered) {
+            const failedCount = result.attemptedModels?.length || 1;
+            const primaryName = result.attemptedModels?.[0]?.model || 'Primary model';
+            const statusDetail = result.attemptedModels?.[0]?.status ? ` [${result.attemptedModels[0].status}]` : '';
+            const failNote = failedCount > 1
+                ? ` (${primaryName}${statusDetail} and ${failedCount - 1} other model(s) unavailable)`
+                : ` (${primaryName}${statusDetail} was busy)`;
+            showAiNotice(`⚡ Model fallback active: generated using ${result.modelUsed}${failNote}.`);
+        }
+
         renderActionPreview(result);
     } catch (err) {
         setThinkingState(false);
+        hideAiNotice();
         console.error('[AI Assistant Error]', err);
         showAiError(`Assistant error: ${err.message}`);
     }
 }
 
-function setThinkingState(isThinking) {
+function setThinkingState(isThinking, statusText = 'Analyzing schedule...', subText = 'Correlating dates, courses & events') {
     const thinkingBox = document.getElementById('aiThinkingState');
     const previewContainer = document.getElementById('aiPreviewContainer');
     const btnAnalyze = document.getElementById('btnAiAnalyze');
     const spinner = document.getElementById('aiAnalyzeSpinner');
     const btnText = document.getElementById('aiAnalyzeBtnText');
+    const statusEl = document.getElementById('aiThinkingStatus');
+    const subtextEl = document.getElementById('aiThinkingSubtext');
 
     if (isThinking) {
         if (thinkingBox) thinkingBox.classList.remove('hidden');
+        if (statusEl) statusEl.textContent = statusText;
+        if (subtextEl) subtextEl.textContent = subText;
         if (previewContainer) previewContainer.classList.add('hidden');
         if (spinner) spinner.classList.remove('hidden');
         if (btnText) btnText.textContent = 'Processing...';
         if (btnAnalyze) btnAnalyze.disabled = true;
     } else {
         if (thinkingBox) thinkingBox.classList.add('hidden');
+        if (statusEl) statusEl.textContent = 'Analyzing schedule...';
+        if (subtextEl) subtextEl.textContent = 'Correlating dates, courses & events';
         if (spinner) spinner.classList.add('hidden');
         if (btnText) btnText.textContent = 'Process Instruction';
         if (btnAnalyze) btnAnalyze.disabled = false;
@@ -600,9 +777,8 @@ function createEditableActionCard(action, index) {
         badgeClass = 'badge-event';
     }
 
-    // Initialize date object
-    let cardDate = action.dueDate ? new Date(action.dueDate) : new Date();
-    if (isNaN(cardDate.getTime())) cardDate = new Date();
+    // Initialize date object using safe local wall-clock parser
+    let cardDate = parseAiDueDate(action.dueDate);
     card._currentDate = cardDate;
 
     card.innerHTML = `
@@ -937,7 +1113,7 @@ async function handleApplyAll() {
                         ...existing,
                         title: action.title || existing.title,
                         subjectId: resolvedSubjectId || existing.subjectId,
-                        dueDate: action.dueDate || existing.dueDate,
+                        dueDate: action.dueDate ? parseAiDueDate(action.dueDate).toISOString() : existing.dueDate,
                         completed: action.completed !== undefined ? action.completed : existing.completed,
                         extraInfo: {
                             ...existing.extraInfo,
@@ -963,7 +1139,7 @@ async function handleApplyAll() {
                     typeIcon: action.typeIcon || (action.kind === 'event' ? '📝' : '📚'),
                     subjectId: resolvedSubjectId,
                     title: action.title || 'Untitled',
-                    dueDate: action.dueDate || new Date().toISOString(),
+                    dueDate: action.dueDate ? parseAiDueDate(action.dueDate).toISOString() : new Date().toISOString(),
                     completed: Boolean(action.completed),
                     extraInfo: {
                         number: action.extraInfo?.number || '',
@@ -1076,6 +1252,7 @@ export function initAiModalEvents() {
         if (promptInput) promptInput.value = '';
         discardRecordedAudio();
         hideAiError();
+        hideAiNotice();
         document.getElementById('aiPreviewContainer')?.classList.add('hidden');
     });
 

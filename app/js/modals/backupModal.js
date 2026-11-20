@@ -6,7 +6,7 @@ import { SETTINGS_MODAL_HTML } from './modalTemplates.js';
 
 import { AppState, setAppStateData, persistCurrentState } from '../state.js';
 import { isServerConnected } from '../api.js';
-import { getAiConfig, saveAiConfig, fetchAiModels } from '../services/aiService.js';
+import { getAiConfig, saveAiConfig, fetchAiModels, PRELOADED_GEMINI_MODELS, DEFAULT_GEMINI_FALLBACKS } from '../services/aiService.js';
 import { CustomSelect } from '../components/customSelect.js';
 import { applyPalette, getActivePaletteId, getSavedCustomColors, applyThemeStyle, getActiveThemeStyle } from '../theme.js';
 import { openTrashModal } from './trashModal.js';
@@ -287,8 +287,12 @@ function populateAiSettingsForm() {
     // Populate model options
     if (aiModelCustomSelect) {
         let modelOptions = [];
-        if (Array.isArray(config.modelsList) && config.modelsList.length > 0) {
-            modelOptions = config.modelsList.map(m => ({
+        const effectiveModels = (Array.isArray(config.modelsList) && config.modelsList.length > 1)
+            ? config.modelsList
+            : (config.provider === 'gemini' ? PRELOADED_GEMINI_MODELS : (config.modelsList || []));
+
+        if (effectiveModels.length > 0) {
+            modelOptions = effectiveModels.map(m => ({
                 value: m.id || m,
                 label: m.displayName || m.id || m,
                 secondary: m.id !== m.displayName ? m.id : ''
@@ -305,6 +309,9 @@ function populateAiSettingsForm() {
     const hiddenModel = document.getElementById('aiModelSelect');
     if (hiddenModel) hiddenModel.value = config.model || '';
 
+    // Render Fallback Chain badges
+    renderFallbackChainUI(config.fallbackModels, config.provider || 'gemini');
+
     // Update status badge
     if (statusPill) {
         if (config.apiKey && config.model) {
@@ -317,6 +324,43 @@ function populateAiSettingsForm() {
     }
 
     if (statusText) statusText.textContent = '';
+}
+
+/**
+ * Render badges representing the automatic fallback priority chain
+ */
+export function renderFallbackChainUI(fallbacks = [], provider = 'gemini') {
+    const badgesWrap = document.getElementById('aiFallbackChainBadges');
+    if (!badgesWrap) return;
+    badgesWrap.innerHTML = '';
+
+    const list = Array.isArray(fallbacks) && fallbacks.length > 0
+        ? fallbacks
+        : (provider === 'gemini' ? DEFAULT_GEMINI_FALLBACKS : ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo']);
+
+    list.forEach((m, idx) => {
+        if (idx > 0) {
+            const arrow = document.createElement('span');
+            arrow.textContent = '→';
+            arrow.style.color = 'var(--text-muted)';
+            arrow.style.fontSize = '0.72rem';
+            arrow.style.margin = '0 2px';
+            badgesWrap.appendChild(arrow);
+        }
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.style.background = 'rgba(0, 151, 241, 0.12)';
+        badge.style.color = 'var(--color-primary, #0097f1)';
+        badge.style.border = '1px solid rgba(0, 151, 241, 0.25)';
+        badge.style.padding = '2px 7px';
+        badge.style.borderRadius = '4px';
+        badge.style.fontSize = '0.71rem';
+        badge.style.fontFamily = 'monospace';
+        badge.style.fontWeight = '500';
+        badge.textContent = `${idx + 1}. ${m}`;
+        badgesWrap.appendChild(badge);
+    });
 }
 
 export function updateSettingsPaletteUI() {
@@ -554,6 +598,8 @@ export function initBackupModalEvents() {
                         apiKeyHint.innerHTML = 'Compatible with OpenRouter, Groq, Ollama, DeepSeek, or any OpenAI-compatible API.';
                     }
                 }
+                const cfg = getAiConfig();
+                renderFallbackChainUI(cfg.fallbackModels, val);
             }
         });
     }
@@ -618,20 +664,30 @@ export function initBackupModalEvents() {
                 const currentConfig = getAiConfig();
                 let chosen = currentConfig.model;
                 if (!chosen || !models.some(m => m.id === chosen)) {
-                    const defaultModel = models.find(m => m.id.includes('flash') || m.id.includes('4o-mini')) || models[0];
-                    chosen = defaultModel.id;
+                    const defaultModel = models.find(m => m.id === 'gemini-3.5-flash-lite')
+                        || models.find(m => m.id === 'gemini-3-flash-preview')
+                        || models.find(m => m.id.includes('flash') || m.id.includes('4o-mini'))
+                        || models[0];
+                    chosen = defaultModel ? defaultModel.id : '';
                 }
                 aiModelCustomSelect.setValue(chosen, true);
             }
 
             // Auto-persist modelsList
             const config = getAiConfig();
+            const prevProvider = config.provider;
             config.provider = provider;
             config.apiKey = apiKey;
             config.baseUrl = baseUrl;
             config.model = aiModelCustomSelect ? aiModelCustomSelect.getValue() : '';
             config.modelsList = models;
+            if (prevProvider !== provider || !Array.isArray(config.fallbackModels) || config.fallbackModels.length === 0) {
+                config.fallbackModels = provider === 'gemini'
+                    ? ['gemini-3.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.1-flash-lite-preview', 'gemini-3-flash-preview', 'gemini-3.5-flash']
+                    : ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'];
+            }
             saveAiConfig(config);
+            renderFallbackChainUI(config.fallbackModels, provider);
 
             if (modelStatusText) {
                 modelStatusText.style.color = 'var(--color-success)';
@@ -697,10 +753,16 @@ export function initBackupModalEvents() {
         }
 
         const config = getAiConfig();
+        const prevProvider = config.provider;
         config.provider = provider;
         config.apiKey = apiKey;
         config.baseUrl = baseUrl;
         config.model = model;
+        if (prevProvider !== provider || !Array.isArray(config.fallbackModels) || config.fallbackModels.length === 0) {
+            config.fallbackModels = provider === 'gemini'
+                ? ['gemini-3.5-flash-lite', 'gemini-3-flash-preview', 'gemini-3.8-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite', 'gemini-2.5-flash']
+                : ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'];
+        }
         saveAiConfig(config);
 
         const statusPill = document.getElementById('aiSettingsStatusPill');
@@ -713,7 +775,8 @@ export function initBackupModalEvents() {
         const badge = document.getElementById('aiActiveModelBadge');
         if (badge) {
             badge.className = 'ai-model-badge badge-connected';
-            badge.textContent = `${model || provider}`;
+            const cleanModel = String(model || provider).replace(/^models\//, '');
+            badge.textContent = cleanModel;
         }
 
         showToast({ message: 'AI settings saved successfully!', type: 'success' });

@@ -13,11 +13,14 @@
 
 import { AppState, SUBJECT_GRADIENTS, getFilteredItems, toggleItemComplete, deleteItem, restoreItem } from '../state.js';
 import { formatDate, calculateRemainingTime, sortItemsChronologically, escapeHtml } from '../dateUtils.js';
+import { renderDualDatePillHtml, formatDualDate } from '../jalali.js';
 import { openItemModal } from '../modals/itemModal.js';
 import { ICONS } from '../icons.js';
 import { showToast } from '../toast.js';
 
 let observerInstance = null;
+let isOlderPastRevealed = false;
+let isDeadlinelessExpanded = false;
 
 export function renderTimelineView(container) {
     if (!container) return;
@@ -30,6 +33,8 @@ export function renderTimelineView(container) {
     }
 
     const sortedItems = sortItemsChronologically(getFilteredItems());
+    const datedItems = sortedItems.filter(item => Boolean(item.dueDate));
+    const deadlinelessItems = sortedItems.filter(item => !item.dueDate);
 
     if (sortedItems.length === 0) {
         container.innerHTML = `
@@ -49,34 +54,132 @@ export function renderTimelineView(container) {
     const wrapper = document.createElement('div');
     wrapper.className = 'timeline-view-wrapper view-flow-in';
 
-    // Header with "Jump to Current Location" button
+    // Header without top button (Requirement 2: only single floating button)
     const header = document.createElement('div');
     header.className = 'timeline-header-box';
     header.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-            <div>
-                <h2>Timeline Schedule</h2>
-                <p>Proportional milestone spacing with active anchor at Current Location (Today)</p>
-            </div>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnJumpToNow">
-                ${ICONS.target} Jump to Current Location
-            </button>
+        <div class="timeline-header-content">
+            <h2>Timeline Schedule</h2>
+            <p>Proportional milestone spacing in Shamsi & Gregorian calendar with live anchor at Current Location</p>
         </div>
     `;
     wrapper.appendChild(header);
+
+    // Deadlineless Tasks Section (if any exist)
+    if (deadlinelessItems.length > 0) {
+        const deadlinelessWrap = document.createElement('div');
+        deadlinelessWrap.className = 'timeline-deadlineless-section';
+        deadlinelessWrap.innerHTML = `
+            <div class="timeline-deadlineless-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="meta-icon">${ICONS.clock}</span>
+                    <span style="font-weight: 700;">Deadlineless Tasks</span>
+                    <span class="kanban-count-pill">${deadlinelessItems.length}</span>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm btn-toggle-deadlineless">
+                    ${isDeadlinelessExpanded ? ICONS.chevronUp : ICONS.chevronDown} ${isDeadlinelessExpanded ? 'Hide' : 'Show'}
+                </button>
+            </div>
+            <div class="timeline-deadlineless-list ${isDeadlinelessExpanded ? '' : 'hidden'}"></div>
+        `;
+        const listEl = deadlinelessWrap.querySelector('.timeline-deadlineless-list');
+        const toggleBtn = deadlinelessWrap.querySelector('.btn-toggle-deadlineless');
+
+        deadlinelessItems.forEach(item => {
+            const itemSubj = item.subjectId ? AppState.subjects.find(s => s.id === item.subjectId) : null;
+            const itemSubjTitle = itemSubj ? itemSubj.title : 'General';
+            const row = document.createElement('div');
+            row.className = `compact-task-item ${item.completed ? 'is-completed' : ''}`;
+            row.innerHTML = `
+                <div class="compact-task-left">
+                    <div class="compact-checkbox ${item.completed ? 'checked' : ''}">
+                        ${item.completed ? ICONS.check : ''}
+                    </div>
+                    <div class="compact-task-info">
+                        <div class="compact-task-title-row">
+                            <span class="compact-kind-tag">${escapeHtml(itemSubjTitle)}</span>
+                            <span class="compact-task-title">${escapeHtml(item.title)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="compact-task-actions">
+                    <button type="button" class="compact-action-btn btn-edit">${ICONS.edit}</button>
+                    <button type="button" class="compact-action-btn btn-del">${ICONS.trash}</button>
+                </div>
+            `;
+            row.querySelector('.compact-checkbox').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await toggleItemComplete(item.id, true);
+                renderTimelineView(container);
+            });
+            row.querySelector('.btn-edit').addEventListener('click', (e) => {
+                e.stopPropagation();
+                openItemModal(item.id);
+            });
+            row.querySelector('.btn-del').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await deleteItem(item.id);
+                renderTimelineView(container);
+            });
+            listEl.appendChild(row);
+        });
+
+        toggleBtn.addEventListener('click', () => {
+            isDeadlinelessExpanded = !isDeadlinelessExpanded;
+            const isHidden = !isDeadlinelessExpanded;
+            listEl.classList.toggle('hidden', isHidden);
+            toggleBtn.innerHTML = isHidden ? `${ICONS.chevronDown} Show` : `${ICONS.chevronUp} Hide`;
+        });
+
+        wrapper.appendChild(deadlinelessWrap);
+    }
+
+    if (datedItems.length === 0) {
+        const noDatedNote = document.createElement('div');
+        noDatedNote.className = 'empty-workspace-banner';
+        noDatedNote.style.marginTop = '20px';
+        noDatedNote.innerHTML = `
+            <h3>No Dated Milestones</h3>
+            <p>All recorded tasks are currently deadlineless. Add tasks with deadlines to map them on the chronological timeline.</p>
+        `;
+        wrapper.appendChild(noDatedNote);
+        container.appendChild(wrapper);
+        return;
+    }
 
     const spine = document.createElement('div');
     spine.className = 'timeline-spine';
 
     const now = new Date();
     const nowTime = now.getTime();
-    const nowFormatted = formatDate(now);
+    const nowDual = formatDualDate(now);
 
     // Split items into past items and future items relative to now
-    const pastItems = sortedItems.filter(item => new Date(item.dueDate).getTime() < nowTime);
-    const futureItems = sortedItems.filter(item => new Date(item.dueDate).getTime() >= nowTime);
+    const allPastItems = datedItems.filter(item => new Date(item.dueDate).getTime() < nowTime);
+    const futureItems = datedItems.filter(item => new Date(item.dueDate).getTime() >= nowTime);
 
-    // Function to create "NOW / Current Location" anchor element
+    // Requirement 3: Separate past items into Recent Past (last 7 days) and Older Past
+    const RECENT_PAST_MS = 7 * 24 * 60 * 60 * 1000;
+    const olderPastItems = [];
+    const recentPastItems = [];
+
+    allPastItems.forEach(item => {
+        const itemTime = new Date(item.dueDate).getTime();
+        if (nowTime - itemTime <= RECENT_PAST_MS) {
+            recentPastItems.push(item);
+        } else {
+            olderPastItems.push(item);
+        }
+    });
+
+    // If there are no items in the last 7 days but older past items exist, keep the latest 2 as recent
+    if (recentPastItems.length === 0 && olderPastItems.length > 0) {
+        const countToKeep = Math.min(2, olderPastItems.length);
+        const kept = olderPastItems.splice(olderPastItems.length - countToKeep, countToKeep);
+        recentPastItems.push(...kept);
+    }
+
+    // Function to create "NOW / Current Location" anchor element in Shamsi with hover action
     function createNowAnchor(label = "CURRENT LOCATION (TODAY)") {
         const nowAnchor = document.createElement('div');
         nowAnchor.className = 'timeline-now-anchor timeline-current-location';
@@ -86,9 +189,14 @@ export function renderTimelineView(container) {
                 <span class="timeline-radar-pulse"></span>
                 <div class="timeline-now-dot">${ICONS.target}</div>
             </div>
-            <div class="timeline-now-pill">
+            <div class="timeline-now-pill has-custom-hover" tabindex="0">
                 <span class="pill-label">${label}:</span>
-                <span class="pill-date">${nowFormatted.primaryDisplay}</span>
+                <span class="pill-date">${nowDual.shamsiDisplay}</span>
+                <div class="timeline-anchor-hover-tooltip" role="tooltip">
+                    <span class="tooltip-cal-tag">Gregorian</span>
+                    <span class="tooltip-cal-val">${nowDual.gregFull} (${nowDual.timeStr})</span>
+                    <span class="tooltip-cal-sub">Shamsi: ${nowDual.shamsiFull} • ${nowDual.timeStr}</span>
+                </div>
             </div>
         `;
         return nowAnchor;
@@ -112,31 +220,91 @@ export function renderTimelineView(container) {
         return gapSpacer;
     }
 
-    // 1. Render Past Items (if any)
-    let prevDate = pastItems.length > 0 ? new Date(pastItems[0].dueDate) : null;
+    // Requirement 3: Render Older Past Tasks with very subtle revealing button
+    if (olderPastItems.length > 0) {
+        const olderPastContainer = document.createElement('div');
+        olderPastContainer.className = 'timeline-older-past-wrapper';
 
-    pastItems.forEach((item, index) => {
+        const subtleBtn = document.createElement('button');
+        subtleBtn.type = 'button';
+        subtleBtn.className = 'timeline-subtle-older-btn';
+        subtleBtn.id = 'btnToggleOlderTasks';
+        subtleBtn.innerHTML = `
+            <span class="subtle-btn-icon">${ICONS.history}</span>
+            <span class="subtle-btn-label">${isOlderPastRevealed ? 'Hide older past tasks' : `Show ${olderPastItems.length} older past task${olderPastItems.length > 1 ? 's' : ''}`}</span>
+            <span class="subtle-btn-chevron ${isOlderPastRevealed ? 'is-rotated' : ''}">${ICONS.chevronDown}</span>
+        `;
+
+        const olderDrawer = document.createElement('div');
+        olderDrawer.className = `timeline-older-past-drawer ${isOlderPastRevealed ? 'is-expanded' : 'is-collapsed'}`;
+        olderDrawer.id = 'timelineOlderDrawer';
+
+        let prevOlderDate = new Date(olderPastItems[0].dueDate);
+        olderPastItems.forEach((item, index) => {
+            const itemDate = new Date(item.dueDate);
+            if (index > 0 && prevOlderDate) {
+                const gapMs = itemDate.getTime() - prevOlderDate.getTime();
+                olderDrawer.appendChild(createGapSpacer(gapMs, null, true));
+            }
+            olderDrawer.appendChild(createTimelineNode(item, true, container));
+            prevOlderDate = itemDate;
+        });
+
+        // Toggle subtle older past tasks drawer
+        subtleBtn.addEventListener('click', () => {
+            isOlderPastRevealed = !isOlderPastRevealed;
+            olderDrawer.classList.toggle('is-expanded', isOlderPastRevealed);
+            olderDrawer.classList.toggle('is-collapsed', !isOlderPastRevealed);
+            const label = subtleBtn.querySelector('.subtle-btn-label');
+            const chevron = subtleBtn.querySelector('.subtle-btn-chevron');
+            if (label) {
+                label.textContent = isOlderPastRevealed
+                    ? 'Hide older past tasks'
+                    : `Show ${olderPastItems.length} older past task${olderPastItems.length > 1 ? 's' : ''}`;
+            }
+            if (chevron) {
+                chevron.classList.toggle('is-rotated', isOlderPastRevealed);
+            }
+        });
+
+        olderPastContainer.appendChild(subtleBtn);
+        olderPastContainer.appendChild(olderDrawer);
+        spine.appendChild(olderPastContainer);
+
+        // Gap from older drawer to recent past items
+        if (recentPastItems.length > 0) {
+            const firstRecentDate = new Date(recentPastItems[0].dueDate);
+            const gapToRecent = firstRecentDate.getTime() - prevOlderDate.getTime();
+            spine.appendChild(createGapSpacer(gapToRecent, "Recent past", true));
+        }
+    }
+
+    // 1. Render Recent Past Items
+    let prevRecentDate = recentPastItems.length > 0 ? new Date(recentPastItems[0].dueDate) : null;
+
+    recentPastItems.forEach((item, index) => {
         const itemDate = new Date(item.dueDate);
-        if (index > 0 && prevDate) {
-            const gapMs = itemDate.getTime() - prevDate.getTime();
+        if (index > 0 && prevRecentDate) {
+            const gapMs = itemDate.getTime() - prevRecentDate.getTime();
             spine.appendChild(createGapSpacer(gapMs, null, true));
         }
         spine.appendChild(createTimelineNode(item, true, container));
-        prevDate = itemDate;
+        prevRecentDate = itemDate;
     });
 
-    // Spacer from last past item to NOW
-    if (pastItems.length > 0) {
-        const diffToNow = nowTime - prevDate.getTime();
+    // Spacer from last recent past item to NOW
+    if (recentPastItems.length > 0) {
+        const diffToNow = nowTime - prevRecentDate.getTime();
         const daysAgo = Math.max(0, Math.round(diffToNow / (1000 * 60 * 60 * 24)));
         const gapText = daysAgo === 0 ? "Earlier today" : `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`;
         spine.appendChild(createGapSpacer(diffToNow, gapText, true));
     }
 
-    // 2. Render "NOW / Current Location" Anchor
-    spine.appendChild(createNowAnchor(pastItems.length > 0 ? "CURRENT LOCATION (NOW)" : "TODAY (CURRENT LOCATION)"));
+    // 2. Render "NOW / Current Location" Anchor in Shamsi
+    spine.appendChild(createNowAnchor(recentPastItems.length > 0 || olderPastItems.length > 0 ? "CURRENT LOCATION (NOW)" : "TODAY (CURRENT LOCATION)"));
 
     // Spacer from NOW to first future item
+    let prevDate = null;
     if (futureItems.length > 0) {
         const firstFutureDate = new Date(futureItems[0].dueDate);
         const diffFromNow = firstFutureDate.getTime() - nowTime;
@@ -159,11 +327,12 @@ export function renderTimelineView(container) {
 
     wrapper.appendChild(spine);
 
-    // Floating Jump to Today Button (Req 8)
+    // Requirement 2: Single Floating Jump to Current Date Button
     const floatingBtn = document.createElement('button');
     floatingBtn.type = 'button';
-    floatingBtn.className = 'timeline-floating-jump-today';
+    floatingBtn.className = 'timeline-floating-jump-today visible';
     floatingBtn.id = 'timelineFloatingJumpBtn';
+    floatingBtn.title = 'Jump to current date';
     floatingBtn.innerHTML = `${ICONS.target} <span>Jump to Today</span>`;
     wrapper.appendChild(floatingBtn);
 
@@ -178,31 +347,14 @@ export function renderTimelineView(container) {
         }
     };
 
-    header.querySelector('#btnJumpToNow')?.addEventListener('click', jumpToAnchor);
     floatingBtn.addEventListener('click', jumpToAnchor);
 
-    // Auto-scroll to Today marker on view load/switch (Req 8)
+    // Auto-scroll to Today marker on view load/switch
     requestAnimationFrame(() => {
         jumpToAnchor();
     });
 
-    // Observe Current Location anchor to show/hide floating button when scrolled far (Req 8)
-    const anchorEl = document.getElementById('timelineCurrentLocationAnchor');
-    if (anchorEl && 'IntersectionObserver' in window) {
-        observerInstance = new IntersectionObserver((entries) => {
-            const isVisible = entries[0].isIntersecting;
-            if (isVisible) {
-                floatingBtn.classList.remove('visible');
-            } else {
-                floatingBtn.classList.add('visible');
-            }
-        }, {
-            threshold: 0.2
-        });
-        observerInstance.observe(anchorEl);
-    }
-
-    // Close floating 3-dot menus and reset z-index on click outside (Fix for Issue 1)
+    // Close floating 3-dot menus and reset z-index on click outside
     const handleOutsideClick = (e) => {
         if (!e.target.closest('.timeline-menu-dropdown-wrap')) {
             document.querySelectorAll('.timeline-dropdown-floating-menu').forEach(m => m.classList.add('hidden'));
@@ -214,15 +366,15 @@ export function renderTimelineView(container) {
 }
 
 /**
- * Creates individual timeline item card with custom checkbox and 3-dot dropdown menu (Req 1 & Req 6)
+ * Creates individual timeline item card with Shamsi date, customized hover action, and larger satisfying checkbox
  */
 function createTimelineNode(item, isPast, container) {
     const itemDate = new Date(item.dueDate);
-    const subj = AppState.subjects.find(s => s.id === item.subjectId) || { title: "General Course", gradientIndex: 0 };
-    const gradient = SUBJECT_GRADIENTS[subj.gradientIndex || 0] || SUBJECT_GRADIENTS[0];
+    const subj = item.subjectId ? AppState.subjects.find(s => s.id === item.subjectId) : null;
+    const subjTitle = subj ? subj.title : "General";
+    const gradient = subj ? (SUBJECT_GRADIENTS[subj.gradientIndex || 0] || SUBJECT_GRADIENTS[0]) : { css: 'var(--card-surface-sunken)', contrastText: 'var(--text-primary)' };
 
     const remaining = calculateRemainingTime(itemDate);
-    const formatted = formatDate(itemDate);
     const isTask = item.kind === 'task';
 
     const node = document.createElement('div');
@@ -262,14 +414,15 @@ function createTimelineNode(item, isPast, container) {
                         <span>${escapeHtml(item.title)}</span>
                     </div>
                     <div class="timeline-item-meta">
-                        <span><span class="meta-icon">${ICONS.schedule}</span> ${formatted.fullDisplay}</span>
+                        <!-- Shamsi Date with Customized Hover Action for Gregorian (Req 1) -->
+                        ${renderDualDatePillHtml(itemDate, { iconHtml: ICONS.schedule, showWeekday: true, showTime: true })}
                         ${item.extraInfo?.location ? `<span>• <span class="meta-icon">${ICONS.compass}</span> ${escapeHtml(item.extraInfo.location)}</span>` : ''}
                     </div>
                 </div>
 
-                <!-- Custom Checkbox + 3-Dot Menu -->
+                <!-- Custom Checkbox (Larger & More Satisfying with Aesthetic Animations) + 3-Dot Menu -->
                 <div class="timeline-node-actions">
-                    <!-- Custom Checkbox -->
+                    <!-- Custom Checkbox (Req 5) -->
                     <div class="compact-checkbox ${item.completed ? 'checked' : ''}" title="${item.completed ? 'Reopen item' : 'Mark as completed'}">
                         ${item.completed ? ICONS.check : ''}
                     </div>
@@ -295,32 +448,38 @@ function createTimelineNode(item, isPast, container) {
         </div>
     `;
 
-    // Local Checkbox toggle
+    // Local Checkbox toggle with aesthetic micro-interaction (Req 5)
     node.querySelector('.compact-checkbox').addEventListener('click', async (e) => {
         e.stopPropagation();
-        await toggleItemComplete(item.id, true /* silent */);
         const checkboxEl = node.querySelector('.compact-checkbox');
         const titleEl = node.querySelector('.timeline-item-title');
         const badgeEl = node.querySelector('.compact-urgency-badge');
 
-        if (item.completed) {
+        const willBeCompleted = !item.completed;
+        if (willBeCompleted) {
             node.classList.add('is-completed');
             node.classList.remove('is-urgent');
             checkboxEl.classList.add('checked');
             checkboxEl.innerHTML = ICONS.check;
-            titleEl.classList.add('completed-text');
-            badgeEl.className = 'compact-urgency-badge completed';
-            badgeEl.innerHTML = `<span class="urgency-icon-svg">${ICONS.checkCircle}</span><span>Completed</span>`;
+            titleEl?.classList.add('completed-text');
+            if (badgeEl) {
+                badgeEl.className = 'compact-urgency-badge completed';
+                badgeEl.innerHTML = `<span class="urgency-icon-svg">${ICONS.checkCircle}</span><span>Completed</span>`;
+            }
         } else {
             node.classList.remove('is-completed');
             checkboxEl.classList.remove('checked');
             checkboxEl.innerHTML = '';
-            titleEl.classList.remove('completed-text');
-            const rem = calculateRemainingTime(new Date(item.dueDate));
-            if (rem.isUrgent) node.classList.add('is-urgent');
-            badgeEl.className = `compact-urgency-badge ${rem.urgencyLevel}`;
-            badgeEl.innerHTML = `<span class="urgency-icon-svg">${rem.isUrgent ? ICONS.alert : ICONS.clock}</span><span>${rem.friendlyText}</span>`;
+            titleEl?.classList.remove('completed-text');
+            if (badgeEl) {
+                const rem = calculateRemainingTime(new Date(item.dueDate));
+                if (rem.isUrgent) node.classList.add('is-urgent');
+                badgeEl.className = `compact-urgency-badge ${rem.urgencyLevel}`;
+                badgeEl.innerHTML = `<span class="urgency-icon-svg">${rem.isUrgent ? ICONS.alert : ICONS.clock}</span><span>${rem.friendlyText}</span>`;
+            }
         }
+
+        await toggleItemComplete(item.id, true /* silent */);
     });
 
     // 3-Dot Menu toggle with Z-Index Stacking Elevation
@@ -349,7 +508,7 @@ function createTimelineNode(item, isPast, container) {
         openItemModal(item.id);
     });
 
-    // Delete Item with Toast Undo (Req 7)
+    // Delete Item with Toast Undo
     node.querySelector('.btn-tl-delete').addEventListener('click', async (e) => {
         e.stopPropagation();
         menu.classList.add('hidden');

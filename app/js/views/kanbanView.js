@@ -23,6 +23,7 @@ import {
     persistCurrentState
 } from '../state.js';
 import { formatDate, calculateRemainingTime, escapeHtml, parseQuickTaskInput } from '../dateUtils.js';
+import { renderDualDatePillHtml } from '../jalali.js';
 import { renderMarkdown, bindMarkdownChecklists } from '../markdown.js';
 import { openItemModal } from '../modals/itemModal.js';
 import { openSubjectModal } from '../modals/subjectModal.js';
@@ -39,30 +40,43 @@ export function renderKanbanView(container) {
     // while still honoring topic tags, search queries, and task/event kind filters.
     let filteredItems = getFilteredItems({ ignoreStatusFilter: true });
 
-    if (AppState.subjects.length === 0) {
+    if (AppState.subjects.length === 0 && AppState.items.length === 0) {
         container.innerHTML = `
             <div class="empty-workspace-banner view-flow-in">
                 <div class="empty-icon-circle">${ICONS.viewKanban}</div>
-                <h3>No subjects for Kanban board</h3>
-                <p>Create subjects to organize your assignments and milestones into workflow columns.</p>
-                <button type="button" class="btn btn-primary" id="btnEmptyKanbanAddSubj">
-                    ${ICONS.plus} New Subject
-                </button>
+                <h3>Kanban Board Ready</h3>
+                <p>Create free to-do tasks or course subjects to organize your workflow into columns.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+                    <button type="button" class="btn btn-primary" id="btnEmptyKanbanAddTask">
+                        ${ICONS.plus} Add Free Task
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btnEmptyKanbanAddSubj">
+                        ${ICONS.plus} New Subject
+                    </button>
+                </div>
             </div>
         `;
+        container.querySelector('#btnEmptyKanbanAddTask')?.addEventListener('click', () => openItemModal(null, 'general', 'task', null, true));
         container.querySelector('#btnEmptyKanbanAddSubj')?.addEventListener('click', () => openSubjectModal());
         return;
     }
+
+    const generalTasksCount = filteredItems.filter(i => !i.subjectId).length;
 
     // Render Course Filter Strip above columns
     const filterBar = document.createElement('div');
     filterBar.className = 'kanban-course-filter-bar';
     filterBar.innerHTML = `
-        <span class="kanban-filter-label"><span class="meta-icon">${ICONS.viewCards}</span> Courses:</span>
+        <span class="kanban-filter-label"><span class="meta-icon">${ICONS.viewCards}</span> Filter:</span>
         <div class="kanban-course-pills">
             <button type="button" class="kanban-course-pill ${activeKanbanCourseFilter === 'all' ? 'active' : ''}" data-subject="all">
-                All Courses (${filteredItems.length})
+                All Items (${filteredItems.length})
             </button>
+            ${generalTasksCount > 0 ? `
+                <button type="button" class="kanban-course-pill ${activeKanbanCourseFilter === 'general' ? 'active' : ''}" data-subject="general">
+                    General Tasks (${generalTasksCount})
+                </button>
+            ` : ''}
             ${AppState.subjects.map(s => {
                 const count = filteredItems.filter(i => i.subjectId === s.id).length;
                 if (count === 0) return '';
@@ -83,7 +97,9 @@ export function renderKanbanView(container) {
     container.appendChild(filterBar);
 
     // Apply course filter if selected
-    if (activeKanbanCourseFilter !== 'all') {
+    if (activeKanbanCourseFilter === 'general') {
+        filteredItems = filteredItems.filter(i => !i.subjectId);
+    } else if (activeKanbanCourseFilter !== 'all') {
         filteredItems = filteredItems.filter(i => i.subjectId === activeKanbanCourseFilter);
     }
 
@@ -124,9 +140,23 @@ export function renderKanbanView(container) {
     });
 
     // Chronological sorting: active columns put earliest deadlines (most urgent) first;
-    // completed column puts most recently due items first.
-    const sortAsc = (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-    const sortDesc = (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+    // deadlineless tasks are sorted after dated ones.
+    const sortAsc = (a, b) => {
+        const aHas = Boolean(a && a.dueDate);
+        const bHas = Boolean(b && b.dueDate);
+        if (aHas && bHas) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return (a?.createdAt || '').localeCompare(b?.createdAt || '');
+    };
+    const sortDesc = (a, b) => {
+        const aHas = Boolean(a && a.dueDate);
+        const bHas = Boolean(b && b.dueDate);
+        if (aHas && bHas) return new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime();
+        if (aHas && !bHas) return -1;
+        if (!aHas && bHas) return 1;
+        return (b?.createdAt || '').localeCompare(a?.createdAt || '');
+    };
     columns[0].items.sort(sortAsc);
     columns[1].items.sort(sortAsc);
     columns[2].items.sort(sortDesc);
@@ -156,7 +186,8 @@ export function renderKanbanView(container) {
             ` : ''}
         `;
         colHeader.querySelector('.btn-kanban-add')?.addEventListener('click', () => {
-            openItemModal(null, null, 'task');
+            const targetSubj = (activeKanbanCourseFilter !== 'all' && activeKanbanCourseFilter !== 'general') ? activeKanbanCourseFilter : null;
+            openItemModal(null, targetSubj, 'task');
         });
         colEl.appendChild(colHeader);
 
@@ -215,11 +246,12 @@ export function renderKanbanView(container) {
             cardsList.innerHTML = `<div class="kanban-empty-slot">Drop cards here</div>`;
         } else {
             col.items.forEach((item, cardIndex) => {
-                const subj = AppState.subjects.find(s => s.id === item.subjectId) || { title: "Subject", gradientIndex: 0 };
-                const gradient = SUBJECT_GRADIENTS[subj.gradientIndex || 0] || SUBJECT_GRADIENTS[0];
-                const dueDate = new Date(item.dueDate);
+                const subj = item.subjectId ? AppState.subjects.find(s => s.id === item.subjectId) : null;
+                const gradient = subj ? (SUBJECT_GRADIENTS[subj.gradientIndex || 0] || SUBJECT_GRADIENTS[0]) : null;
+                const subjTitle = subj ? subj.title : "General";
+                const dueDate = item.dueDate ? new Date(item.dueDate) : null;
                 const formatted = formatDate(dueDate);
-                const remaining = calculateRemainingTime(dueDate);
+                const remaining = calculateRemainingTime(item.dueDate);
                 const isTask = item.kind === 'task';
 
                 const card = document.createElement('div');
@@ -242,8 +274,8 @@ export function renderKanbanView(container) {
                             <div class="compact-checkbox ${item.completed ? 'checked' : ''}" title="${item.completed ? 'Reopen task' : 'Mark as done'}">
                                 ${item.completed ? ICONS.check : ''}
                             </div>
-                            <div class="kanban-card-subject-tag" style="background: ${gradient.css}; color: ${gradient.contrastText || 'var(--color-on-primary)'};" title="${escapeHtml(subj.title)}">
-                                ${escapeHtml(subj.title)}
+                            <div class="kanban-card-subject-tag ${!subj ? 'general-tag' : ''}" style="${gradient ? `background: ${gradient.css}; color: ${gradient.contrastText || 'var(--color-on-primary)'};` : 'background: var(--card-surface-sunken); color: var(--text-primary); border: 1px solid var(--card-border-subtle);'}" title="${escapeHtml(subjTitle)}">
+                                ${escapeHtml(subjTitle)}
                             </div>
                         </div>
                         <div class="kanban-card-actions">
@@ -257,10 +289,12 @@ export function renderKanbanView(container) {
                     </div>
                     <div class="kanban-card-title">${escapeHtml(item.title)}</div>
                     <div class="kanban-card-meta">
-                        <span class="kanban-meta-date"><span class="meta-icon">${ICONS.schedule}</span> ${formatted.primaryDisplay}</span>
-                        ${!item.completed
-                            ? `<span class="compact-urgency-badge ${remaining.urgencyLevel}">${remaining.friendlyText}</span>`
-                            : `<span class="compact-urgency-badge completed">Done</span>`}
+                        ${renderDualDatePillHtml(dueDate, { iconHtml: ICONS.schedule, showWeekday: true, showTime: true })}
+                        ${item.completed
+                            ? `<span class="compact-urgency-badge completed">Done</span>`
+                            : (!item.dueDate
+                                ? `<span class="compact-urgency-badge none">No deadline</span>`
+                                : `<span class="compact-urgency-badge ${remaining.urgencyLevel}">${remaining.friendlyText}</span>`)}
                     </div>
                     ${item.extraInfo?.notes ? `<div class="kanban-card-notes">${renderMarkdown(item.extraInfo.notes)}</div>` : ''}
                     <div class="kanban-card-footer">
@@ -333,17 +367,16 @@ export function renderKanbanView(container) {
                     const val = input.value.trim();
                     if (!val) return;
 
-                    const parsed = parseQuickTaskInput(val);
+                    const targetSubjId = (activeKanbanCourseFilter !== 'all' && activeKanbanCourseFilter !== 'general')
+                        ? activeKanbanCourseFilter
+                        : (activeKanbanCourseFilter === 'general' ? null : (AppState.subjects[0]?.id || null));
+                    const isGeneralTask = !targetSubjId;
+
+                    const parsed = parseQuickTaskInput(val, isGeneralTask);
                     if (!parsed) return;
 
-                    const targetSubjId = activeKanbanCourseFilter !== 'all' ? activeKanbanCourseFilter : (AppState.subjects[0]?.id || null);
-                    if (!targetSubjId) {
-                        showToast({ message: 'Please create a course subject first', type: 'warning' });
-                        return;
-                    }
-
                     const types = parsed.kind === 'task' ? AppState.config.taskTypes : AppState.config.eventTypes;
-                    const defaultType = types[0] || { id: 'tt_hw', name: 'HW', icon: '📚' };
+                    const defaultType = types[0] || { id: 'tt_hw', name: 'Task', icon: '📚' };
 
                     const newItem = {
                         kind: parsed.kind,

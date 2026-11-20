@@ -33,7 +33,6 @@ export function openSubjectModal(subjectId = null) {
         if (subj) {
             modalTitle.textContent = 'Edit Subject';
             document.getElementById('subjectNameInput').value = subj.title;
-            document.getElementById('subjectCodeInput').value = subj.code || '';
             selectedGradientIndex = subj.gradientIndex || 0;
             currentTags = Array.isArray(subj.tags) ? [...subj.tags] : [];
         }
@@ -191,7 +190,6 @@ export function initSubjectModalEvents() {
     document.getElementById('subjectForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
         const title = document.getElementById('subjectNameInput').value.trim();
-        const code = document.getElementById('subjectCodeInput').value.trim();
 
         if (!title) {
             showToast({ message: 'Subject title is required', type: 'error' });
@@ -201,7 +199,6 @@ export function initSubjectModalEvents() {
         await addOrUpdateSubject({
             id: activeSubjectId,
             title,
-            code,
             tags: currentTags,
             gradientIndex: selectedGradientIndex
         });

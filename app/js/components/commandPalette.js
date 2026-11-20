@@ -20,6 +20,8 @@ import { openTrashModal } from '../modals/trashModal.js';
 import { openAiModal } from '../modals/aiModal.js';
 import { applyPalette, getActivePaletteId } from '../theme.js';
 import { formatDate, escapeHtml } from '../dateUtils.js';
+import { openFolder } from '../api.js';
+import { showToast } from '../toast.js';
 
 let selectedIndex = 0;
 let currentItems = [];
@@ -62,6 +64,7 @@ function getBaseCommands() {
 
         // Quick Actions
         { id: 'act_new_task', group: 'Actions', title: 'Create New Task...', icon: ICONS.task, shortcut: 'N', action: () => openItemModal(null, null, 'task') },
+        { id: 'act_new_free_task', group: 'Actions', title: 'Create Free Task (No Course)...', icon: ICONS.checkCircle, action: () => openItemModal(null, 'general', 'task', null, true) },
         { id: 'act_new_event', group: 'Actions', title: 'Create New Event / Quiz...', icon: ICONS.event, action: () => openItemModal(null, null, 'event') },
         { id: 'act_new_subj', group: 'Actions', title: 'Add Course Subject...', icon: ICONS.viewCards, action: () => openSubjectModal() },
         { id: 'act_new_folder', group: 'Actions', title: 'Link Course Folder to Explorer...', icon: ICONS.folder, action: () => openFolderModal() },
@@ -87,12 +90,12 @@ function renderPaletteItems(query = '') {
 
     // Match courses
     const matchedSubjects = (AppState.subjects || [])
-        .filter(s => !q || s.title.toLowerCase().includes(q) || (s.code && s.code.toLowerCase().includes(q)))
+        .filter(s => !q || s.title.toLowerCase().includes(q))
         .map(s => ({
             id: `subj_${s.id}`,
             group: 'Courses',
             title: s.title,
-            subtitle: s.code || 'Course Subject',
+            subtitle: 'Course Subject',
             icon: ICONS.viewCards,
             action: () => openSubjectModal(s.id)
         }));
@@ -102,19 +105,43 @@ function renderPaletteItems(query = '') {
         .filter(i => !q || i.title.toLowerCase().includes(q) || (i.extraInfo?.notes && i.extraInfo.notes.toLowerCase().includes(q)))
         .slice(0, 8)
         .map(i => {
-            const subj = AppState.subjects.find(s => s.id === i.subjectId);
+            const subj = i.subjectId ? AppState.subjects.find(s => s.id === i.subjectId) : null;
             const due = formatDate(i.dueDate);
+            const dueLabel = i.dueDate ? `Due ${due.primaryDisplay}` : 'No deadline';
             return {
                 id: `item_${i.id}`,
                 group: i.kind === 'task' ? 'Tasks' : 'Events',
                 title: i.title,
-                subtitle: `${subj?.title || 'Subject'} • Due ${due.primaryDisplay}`,
+                subtitle: `${subj?.title || 'General'} • ${dueLabel}`,
                 icon: i.kind === 'task' ? ICONS.task : ICONS.event,
                 action: () => openItemModal(i.id)
             };
         });
 
-    currentItems = [...matchedCommands, ...matchedSubjects, ...matchedTasks];
+    // Match linked course folders
+    const matchedFolders = (AppState.materials || [])
+        .filter(m => !q || m.name.toLowerCase().includes(q) || (m.filePath && m.filePath.toLowerCase().includes(q)) || (m.notes && m.notes.toLowerCase().includes(q)))
+        .slice(0, 6)
+        .map(m => {
+            const subj = AppState.subjects.find(s => s.id === m.subjectId);
+            return {
+                id: `folder_${m.id}`,
+                group: 'Folders',
+                title: m.name,
+                subtitle: `${subj?.title || 'Course'} • ${m.filePath}`,
+                icon: ICONS.folder,
+                action: async () => {
+                    const res = await openFolder(m.filePath);
+                    if (!res.success) {
+                        showToast({ message: res.error || 'Could not open folder in Explorer.', type: 'error' });
+                    } else {
+                        showToast({ message: `Opened "${m.name}" in Explorer`, type: 'info' });
+                    }
+                }
+            };
+        });
+
+    currentItems = [...matchedCommands, ...matchedSubjects, ...matchedFolders, ...matchedTasks];
 
     if (currentItems.length === 0) {
         resultsContainer.innerHTML = `

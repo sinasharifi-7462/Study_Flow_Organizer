@@ -126,7 +126,7 @@ export class EditableCourseSelect {
         // Filtered or all existing subjects
         const filtered = this.subjects.filter(s => {
             if (!currentText) return true;
-            return s.title.toLowerCase().includes(currentLower) || (s.code && s.code.toLowerCase().includes(currentLower));
+            return s.title.toLowerCase().includes(currentLower);
         });
 
         if (filtered.length === 0 && !currentText) {
@@ -146,7 +146,6 @@ export class EditableCourseSelect {
 
             opt.innerHTML = `
                 <span class="opt-title">${escapeHtml(subj.title)}</span>
-                ${subj.code ? `<span class="opt-code">${escapeHtml(subj.code)}</span>` : ''}
             `;
 
             opt.addEventListener('click', (e) => {

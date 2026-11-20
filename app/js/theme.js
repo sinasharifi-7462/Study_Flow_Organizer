@@ -31,8 +31,8 @@ export const PALETTE_PRESETS = {
         id: 'black',
         name: 'Ultra Minimalist Black',
         colors: {
-            primary: '#f4f4f5',       // Crisp Light Silver / White Accent
-            primaryLight: '#ffffff',
+            primary: '#8e8e93',       // Dimmer, grayer silver/zinc accent (was #f4f4f5)
+            primaryLight: '#a1a1aa',
             canvas: '#000000',        // Pure OLED Black
             canvasDeep: '#09090b',
             surface: '#121214',       // Deep Carbon Slate
@@ -149,6 +149,20 @@ export function hexToRgba(hex, alpha = 1) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+export function hexToRgbValues(hex) {
+    if (!hex || typeof hex !== 'string') return '25, 114, 120';
+    let clean = hex.replace('#', '');
+    if (clean.length === 3) {
+        clean = clean.split('').map(c => c + c).join('');
+    }
+    const num = parseInt(clean, 16);
+    if (isNaN(num)) return '25, 114, 120';
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `${r}, ${g}, ${b}`;
+}
+
 /**
  * Adjust brightness of a hex color by a given percentage (-100 to 100)
  */
@@ -182,7 +196,16 @@ export function generateSubjectColors(paletteColors, isFlat = false) {
     const a5 = isLight ? '#2563eb' : '#3b82f6';
     const a6 = secondary || (isLight ? '#7c3aed' : '#8b5cf6');
 
-    const accentHues = [a1, a2, a3, a4, a5, a6];
+    // In black & white theme, ensure the white title banner gets dimmer and grayer
+    const isBlackTheme = canvas === '#000000';
+    const accentHues = [
+        isBlackTheme ? '#71717a' : a1,
+        a2,
+        a3,
+        a4,
+        a5,
+        a6
+    ];
 
     if (isFlat) {
         return accentHues.map((col, idx) => {
@@ -204,7 +227,10 @@ export function generateSubjectColors(paletteColors, isFlat = false) {
     // Glassmorphic Gradients
     return accentHues.map((col, idx) => {
         let gradCss;
-        if (isLight) {
+        if (isBlackTheme && idx === 0) {
+            // Dimmer, grayer title background in black and white theme
+            gradCss = 'linear-gradient(135deg, #27272a 0%, #63636b 100%)';
+        } else if (isLight) {
             gradCss = `linear-gradient(135deg, ${col} 0%, ${adjustBrightness(col, 20)} 100%)`;
         } else {
             const deepAnchor = adjustBrightness(col, -35);
@@ -342,11 +368,14 @@ export function applyPalette(paletteId = 'default', customColors = null) {
         if (document.body) {
             document.body.classList.toggle('theme-light', isLight);
             document.body.classList.toggle('theme-flat', isFlat);
+            document.body.classList.toggle('palette-black', paletteId === 'black');
+            document.body.dataset.palette = paletteId;
         }
         const root = document.documentElement;
 
         // 1. Independent Accent Tokens
         root.style.setProperty('--color-primary', colors.primary);
+        root.style.setProperty('--color-primary-rgb', hexToRgbValues(colors.primary));
         root.style.setProperty('--color-primary-light', colors.primaryLight || adjustBrightness(colors.primary, 15));
         root.style.setProperty('--color-primary-dark', adjustBrightness(colors.primary, -20));
         root.style.setProperty('--color-primary-glow', hexToRgba(colors.primary, 0.45));

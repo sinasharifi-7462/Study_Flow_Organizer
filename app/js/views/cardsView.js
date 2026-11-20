@@ -23,9 +23,11 @@ import {
     deleteMaterial,
     togglePinSubject,
     reorderSubjects,
-    addOrUpdateItem
+    addOrUpdateItem,
+    persistCurrentState
 } from '../state.js';
 import { formatDate, calculateRemainingTime, sortItemsChronologically, escapeHtml, parseQuickTaskInput } from '../dateUtils.js';
+import { renderDualDatePillHtml } from '../jalali.js';
 import { openItemModal } from '../modals/itemModal.js';
 import { openSubjectModal } from '../modals/subjectModal.js';
 import { openFolderModal } from '../modals/folderModal.js';
@@ -44,21 +46,59 @@ export function renderCardsView(container) {
     const hasSearch = Boolean(query);
     const activeTag = AppState.activeTagFilter && AppState.activeTagFilter !== 'all' ? AppState.activeTagFilter.toLowerCase() : null;
 
+    const generalFilteredItems = filteredItems.filter(i => !i.subjectId);
+    const showGeneralCard = !hasSearch
+        ? (AppState.activeTagFilter === 'all' || generalFilteredItems.length > 0)
+        : (generalFilteredItems.length > 0 || 'general free todo tasks'.includes(query.toLowerCase()));
+    const isGeneralPinned = Boolean(AppState.config?.isGeneralPinned);
+
     if (AppState.subjects.length === 0) {
-        container.innerHTML = `
-            <div style="grid-column: 1 / -1;">
-                <div class="empty-workspace-banner view-flow-in">
-                    <div class="empty-icon-circle">${ICONS.viewCards}</div>
-                    <h3>No subjects added yet</h3>
-                    <p>Create your first course subject to start scheduling deadlines, exams, and linking course folders.</p>
-                    <button type="button" class="btn btn-primary" id="btnEmptyCreateSubject">
-                        ${ICONS.plus} Add First Subject
+        if (showGeneralCard) {
+            const genCard = createGeneralTasksCard(container, hasSearch);
+            container.appendChild(genCard);
+
+            // Add First Course card
+            const addCourseCard = document.createElement('div');
+            addCourseCard.className = 'subject-card add-course-card view-flow-in';
+            addCourseCard.innerHTML = `
+                <div class="add-course-prompt">
+                    <div class="add-course-icon">${ICONS.plus}</div>
+                    <h3>Add Academic Course</h3>
+                    <p>Organize academic courses, deadlines, exams, and link local folder hubs.</p>
+                    <button type="button" class="btn btn-primary" id="btnCardsAddCourse">
+                        ${ICONS.plus} Add First Course
                     </button>
                 </div>
-            </div>
-        `;
-        container.querySelector('#btnEmptyCreateSubject')?.addEventListener('click', () => openSubjectModal());
-        return;
+            `;
+            addCourseCard.querySelector('#btnCardsAddCourse')?.addEventListener('click', () => openSubjectModal());
+            container.appendChild(addCourseCard);
+            return;
+        } else {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1;">
+                    <div class="empty-workspace-banner view-flow-in">
+                        <div class="empty-icon-circle">${ICONS.search}</div>
+                        <h3>No matching tasks found</h3>
+                        <p>No tasks matched the active filter or query.</p>
+                        <button type="button" class="btn btn-secondary" id="btnCardsClearFilter" style="margin-top: 10px;">
+                            Reset Filters
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.querySelector('#btnCardsClearFilter')?.addEventListener('click', () => {
+                AppState.searchQuery = '';
+                AppState.activeTagFilter = 'all';
+                const searchInput = document.getElementById('globalSearchInput');
+                if (searchInput) searchInput.value = '';
+                const clearBtn = document.getElementById('clearSearchBtn');
+                if (clearBtn) clearBtn.style.display = 'none';
+                const kbdHint = document.getElementById('searchKbdHint');
+                if (kbdHint) kbdHint.style.display = 'inline-flex';
+                renderCardsView(container);
+            });
+            return;
+        }
     }
 
     // Filter visible subjects when searching or filtering by tag
@@ -85,7 +125,7 @@ export function renderCardsView(container) {
         return (a.order ?? 0) - (b.order ?? 0);
     });
 
-    if (visibleSubjects.length === 0) {
+    if (visibleSubjects.length === 0 && !showGeneralCard) {
         container.innerHTML = `
             <div style="grid-column: 1 / -1;">
                 <div class="empty-workspace-banner view-flow-in">
@@ -112,11 +152,99 @@ export function renderCardsView(container) {
         return;
     }
 
+    let renderedGeneral = false;
+    if (showGeneralCard && isGeneralPinned) {
+        container.appendChild(createGeneralTasksCard(container, hasSearch));
+        renderedGeneral = true;
+    }
+
     visibleSubjects.forEach((subj, index) => {
+        if (!renderedGeneral && showGeneralCard && !subj.isPinned) {
+            container.appendChild(createGeneralTasksCard(container, hasSearch));
+            renderedGeneral = true;
+        }
         const card = createSubjectCard(subj, container, hasSearch);
         card.style.animationDelay = `${index * 0.03}s`;
         container.appendChild(card);
     });
+
+    if (showGeneralCard && !renderedGeneral) {
+        container.appendChild(createGeneralTasksCard(container, hasSearch));
+    }
+}
+
+/**
+ * Creates the Free To-Do / General Tasks Card (No course required)
+ */
+function createGeneralTasksCard(container, hasSearch) {
+    const generalItems = AppState.items.filter(i => !i.subjectId);
+    const totalItems = generalItems.length;
+    const completedItems = generalItems.filter(i => i.completed).length;
+    const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+    const isPinned = Boolean(AppState.config?.isGeneralPinned);
+
+    const card = document.createElement('div');
+    card.className = `subject-card general-card view-flow-in ${isPinned ? 'is-pinned-card' : ''}`;
+    card.dataset.subjectId = 'general';
+
+    // Banner
+    const banner = document.createElement('div');
+    banner.className = 'subject-header-banner general-header-banner';
+
+    banner.innerHTML = `
+        <div class="subject-top-actions">
+            <div class="subject-top-left-badges">
+                <span class="subject-tag-badge">
+                    ${ICONS.task}
+                    Free To-Do
+                </span>
+                ${isPinned ? `<span class="pinned-badge" title="Pinned to top">${ICONS.pinFilled} Pinned</span>` : ''}
+            </div>
+            <div class="subject-menu-btns">
+                <button type="button" class="subject-menu-btn btn-pin-general ${isPinned ? 'is-active-pin' : ''}" title="${isPinned ? 'Unpin list' : 'Pin to top'}">
+                    ${isPinned ? ICONS.pinFilled : ICONS.pin}
+                </button>
+                <button type="button" class="subject-menu-btn btn-add-general-item" title="Add Free Task">
+                    ${ICONS.plus}
+                </button>
+            </div>
+        </div>
+
+        <div class="subject-title">General Tasks</div>
+        <div class="subject-subtitle" style="font-size: 0.78rem; opacity: 0.85; margin-top: 2px;">Standalone to-do list • No course needed</div>
+
+        <div class="subject-progress-container" style="margin-top: 12px;">
+            <div class="progress-bar-bg">
+                <div class="progress-bar-fill" style="width: ${progressPercent}%;"></div>
+            </div>
+            <span class="progress-label-text">${progressPercent}% (${completedItems}/${totalItems})</span>
+        </div>
+    `;
+
+    banner.querySelector('.btn-pin-general')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (!AppState.config) AppState.config = {};
+        AppState.config.isGeneralPinned = !AppState.config.isGeneralPinned;
+        await persistCurrentState(true);
+        renderCardsView(container);
+    });
+
+    banner.querySelector('.btn-add-general-item')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openItemModal(null, 'general', 'task', null, true);
+    });
+
+    card.appendChild(banner);
+
+    // Schedule Pane
+    const scheduleContent = document.createElement('div');
+    scheduleContent.className = 'compact-grid-list card-schedule-pane';
+    scheduleContent.style.display = 'flex';
+
+    renderCardScheduleTasks(card, null, scheduleContent, hasSearch, container);
+    card.appendChild(scheduleContent);
+
+    return card;
 }
 
 /**
@@ -132,6 +260,12 @@ function createSubjectCard(subj, container, hasSearch) {
     const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
     const currentTab = AppState.cardSubTabs[subj.id] || 'schedule';
+    const query = (AppState.searchQuery || '').trim().toLowerCase();
+    const hasMatchingFolders = hasSearch && subjMaterials.some(m =>
+        (m.name && m.name.toLowerCase().includes(query)) ||
+        (m.notes && m.notes.toLowerCase().includes(query))
+    );
+    const activeSubTab = hasMatchingFolders ? 'folders' : currentTab;
 
     const card = document.createElement('div');
     card.className = `subject-card view-flow-in ${subj.isPinned ? 'is-pinned-card' : ''}`;
@@ -227,7 +361,6 @@ function createSubjectCard(subj, container, hasSearch) {
         </div>
 
         <div class="subject-title">${escapeHtml(subj.title)}</div>
-        <div class="subject-code-desc">${escapeHtml(subj.code || 'No course code specified')}</div>
 
         ${tagsHtml ? `<div class="subject-card-tags-strip">${tagsHtml}</div>` : ''}
 
@@ -277,11 +410,11 @@ function createSubjectCard(subj, container, hasSearch) {
     const subTabs = document.createElement('div');
     subTabs.className = 'card-sub-tabs';
     subTabs.innerHTML = `
-        <button type="button" class="card-sub-tab-btn ${currentTab === 'schedule' ? 'active' : ''}" data-tab="schedule">
+        <button type="button" class="card-sub-tab-btn ${activeSubTab === 'schedule' ? 'active' : ''}" data-tab="schedule">
             ${ICONS.schedule}
             <span>Schedule (<span class="schedule-tab-count">${subjItems.length}</span>)</span>
         </button>
-        <button type="button" class="card-sub-tab-btn ${currentTab === 'folders' ? 'active' : ''}" data-tab="folders">
+        <button type="button" class="card-sub-tab-btn ${activeSubTab === 'folders' ? 'active' : ''}" data-tab="folders">
             ${ICONS.folder}
             <span>Folders (<span class="folders-tab-count">${subjMaterials.length}</span>)</span>
         </button>
@@ -290,11 +423,11 @@ function createSubjectCard(subj, container, hasSearch) {
     // --- Tab Contents ---
     const scheduleContent = document.createElement('div');
     scheduleContent.className = 'compact-grid-list card-schedule-pane';
-    scheduleContent.style.display = currentTab === 'schedule' ? 'flex' : 'none';
+    scheduleContent.style.display = activeSubTab === 'schedule' ? 'flex' : 'none';
 
     const foldersContent = document.createElement('div');
     foldersContent.className = 'compact-grid-list card-folders-pane';
-    foldersContent.style.display = currentTab === 'folders' ? 'flex' : 'none';
+    foldersContent.style.display = activeSubTab === 'folders' ? 'flex' : 'none';
 
     // Local Sub-Tab switching WITHOUT page reload (Req 3)
     subTabs.querySelectorAll('.card-sub-tab-btn').forEach(btn => {
@@ -333,7 +466,7 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
     scheduleContent.innerHTML = "";
 
     const filteredItems = getFilteredItems();
-    const subjFilteredItems = sortItemsChronologically(filteredItems.filter(i => i.subjectId === subj.id));
+    const subjFilteredItems = sortItemsChronologically(filteredItems.filter(i => (subj ? i.subjectId === subj.id : !i.subjectId)));
 
     // Uncompleted tasks first, then completed ones (Req 1a)
     const uncompletedItems = subjFilteredItems.filter(i => !i.completed);
@@ -341,8 +474,7 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
     const prioritizedItems = [...uncompletedItems, ...completedList];
 
     if (prioritizedItems.length === 0) {
-        scheduleContent.innerHTML = `<div class="task-empty-state">No schedule items matching filter</div>`;
-        return;
+        scheduleContent.innerHTML = `<div class="task-empty-state">${subj ? 'No schedule items matching filter' : 'No general tasks yet. Type below to add a quick to-do!'}</div>`;
     }
 
     // Top 2 prioritized tasks
@@ -358,12 +490,13 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
     scheduleContent.appendChild(primaryWrap);
 
     // Smooth Sliding Expandable Drawer Container for items 3+ (Req 1b)
-    let isDrawerExpanded = hasSearch || AppState.expandedGridSubjectTasks.has(subj.id);
+    const subjKey = subj ? subj.id : 'general';
+    let isDrawerExpanded = hasSearch || AppState.expandedGridSubjectTasks.has(subjKey);
 
     if (remainingItems.length > 0) {
         const expandableWrap = document.createElement('div');
         expandableWrap.className = `card-drawer-expandable ${isDrawerExpanded ? 'is-expanded' : ''}`;
-        expandableWrap.id = `drawer_${subj.id}`;
+        expandableWrap.id = `drawer_${subjKey}`;
 
         remainingItems.forEach(item => {
             expandableWrap.appendChild(createTaskItemElement(item, subj, card, scheduleContent, hasSearch, container));
@@ -376,26 +509,26 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
         const extraCount = remainingItems.length;
 
         footer.innerHTML = `
-            <button type="button" class="card-expand-toggle-btn ${isDrawerExpanded ? 'is-expanded' : ''}" id="btnToggleDrawer_${subj.id}">
+            <button type="button" class="card-expand-toggle-btn ${isDrawerExpanded ? 'is-expanded' : ''}" id="btnToggleDrawer_${subjKey}">
                 <span class="expand-chevron-icon">${ICONS.chevronDown}</span>
                 <span class="expand-btn-label">${isDrawerExpanded ? 'Show Less' : `Show More (+${extraCount})`}</span>
             </button>
             <span class="card-task-count-badge">${prioritizedItems.length} total</span>
         `;
 
-        footer.querySelector(`#btnToggleDrawer_${subj.id}`).addEventListener('click', (e) => {
+        footer.querySelector(`#btnToggleDrawer_${subjKey}`).addEventListener('click', (e) => {
             e.stopPropagation();
-            const drawer = scheduleContent.querySelector(`#drawer_${subj.id}`);
-            const toggleBtn = footer.querySelector(`#btnToggleDrawer_${subj.id}`);
+            const drawer = scheduleContent.querySelector(`#drawer_${subjKey}`);
+            const toggleBtn = footer.querySelector(`#btnToggleDrawer_${subjKey}`);
             const label = footer.querySelector('.expand-btn-label');
 
-            if (AppState.expandedGridSubjectTasks.has(subj.id)) {
-                AppState.expandedGridSubjectTasks.delete(subj.id);
+            if (AppState.expandedGridSubjectTasks.has(subjKey)) {
+                AppState.expandedGridSubjectTasks.delete(subjKey);
                 if (drawer) drawer.classList.remove('is-expanded');
                 if (toggleBtn) toggleBtn.classList.remove('is-expanded');
                 if (label) label.textContent = `Show More (+${extraCount})`;
             } else {
-                AppState.expandedGridSubjectTasks.add(subj.id);
+                AppState.expandedGridSubjectTasks.add(subjKey);
                 if (drawer) drawer.classList.add('is-expanded');
                 if (toggleBtn) toggleBtn.classList.add('is-expanded');
                 if (label) label.textContent = 'Show Less';
@@ -405,12 +538,15 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
         scheduleContent.appendChild(footer);
     }
 
-    // 3. Inline Quick-Add Input (Enter to add task/event directly to this course)
+    // 3. Inline Quick-Add Input (Enter to add task directly)
     const quickAddWrap = document.createElement('div');
     quickAddWrap.className = 'card-inline-quick-add';
+    const isGeneral = !subj;
+    const placeholderText = isGeneral ? "Quick add free to-do... (e.g. Buy groceries)" : "Quick add task... (e.g. HW 3 tomorrow)";
+
     quickAddWrap.innerHTML = `
         <span class="quick-add-plus-icon">${ICONS.plus}</span>
-        <input type="text" class="card-quick-add-input" placeholder="Quick add task... (e.g. HW 3 tomorrow)" title="Type task title and press Enter">
+        <input type="text" class="card-quick-add-input" placeholder="${placeholderText}" title="Type task title and press Enter">
     `;
 
     const quickInput = quickAddWrap.querySelector('.card-quick-add-input');
@@ -420,18 +556,18 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
             const val = quickInput.value.trim();
             if (!val) return;
 
-            const parsed = parseQuickTaskInput(val);
+            const parsed = parseQuickTaskInput(val, isGeneral /* defaultDeadlineless */);
             if (!parsed) return;
 
             const types = parsed.kind === 'task' ? AppState.config.taskTypes : AppState.config.eventTypes;
-            const defaultType = types[0] || { id: 'tt_hw', name: 'HW', icon: '📚' };
+            const defaultType = types[0] || { id: 'tt_hw', name: 'Task', icon: '📚' };
 
             const newItem = {
                 kind: parsed.kind,
                 typeId: defaultType.id,
                 typeName: defaultType.name,
                 typeIcon: defaultType.icon,
-                subjectId: subj.id,
+                subjectId: subj ? subj.id : null,
                 title: parsed.title,
                 dueDate: parsed.dueDate,
                 extraInfo: { number: '', location: '', notes: '' }
@@ -442,14 +578,22 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
 
             // Smoothly refresh this card's schedule pane and count
             renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, container);
-            const countEl = card.querySelector('.schedule-tab-count');
-            if (countEl) {
-                const updatedCount = AppState.items.filter(i => i.subjectId === subj.id).length;
-                countEl.textContent = updatedCount;
-            }
 
+            // Update header count and progress bar
+            const subjItems = AppState.items.filter(i => (subj ? i.subjectId === subj.id : !i.subjectId));
+            const countEl = card.querySelector('.schedule-tab-count');
+            if (countEl) countEl.textContent = subjItems.length;
+
+            const completed = subjItems.filter(i => i.completed).length;
+            const pct = subjItems.length > 0 ? Math.round((completed / subjItems.length) * 100) : 0;
+            const pb = card.querySelector('.progress-bar-fill');
+            const pt = card.querySelector('.progress-label-text');
+            if (pb) pb.style.width = `${pct}%`;
+            if (pt) pt.textContent = `${pct}% (${completed}/${subjItems.length})`;
+
+            const targetTitle = subj ? subj.title : "General Tasks";
             showToast({
-                message: `Added "${parsed.title}" to ${subj.title}`,
+                message: `Added "${parsed.title}" to ${targetTitle}`,
                 type: 'success'
             });
         }
@@ -462,9 +606,9 @@ function renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, contain
  * Creates individual task item element with Local Checkbox Toggle (Req 1a & Req 3)
  */
 function createTaskItemElement(item, subj, card, scheduleContent, hasSearch, container) {
-    const dueDate = new Date(item.dueDate);
+    const dueDate = item.dueDate ? new Date(item.dueDate) : null;
     const formatted = formatDate(dueDate);
-    const remaining = calculateRemainingTime(dueDate);
+    const remaining = calculateRemainingTime(item.dueDate);
     const isTask = item.kind === 'task';
 
     let urgencyClass = remaining.urgencyLevel;
@@ -475,6 +619,10 @@ function createTaskItemElement(item, subj, card, scheduleContent, hasSearch, con
         urgencyClass = "completed";
         urgencyBadge = "Done";
         urgencyIcon = ICONS.checkCircle;
+    } else if (!item.dueDate) {
+        urgencyClass = "none";
+        urgencyBadge = "No deadline";
+        urgencyIcon = ICONS.clock;
     } else if (remaining.urgencyLevel === 'overdue') {
         urgencyBadge = remaining.friendlyText;
         urgencyIcon = ICONS.alert;
@@ -501,7 +649,7 @@ function createTaskItemElement(item, subj, card, scheduleContent, hasSearch, con
                     <span class="compact-task-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</span>
                 </div>
                 <div class="compact-task-meta">
-                    <span><span class="meta-icon">${ICONS.schedule}</span> ${formatted.primaryDisplay}</span>
+                    ${renderDualDatePillHtml(dueDate, { iconHtml: ICONS.schedule, showWeekday: true, showTime: true })}
                     <span>•</span>
                     <span class="compact-urgency-badge ${urgencyClass}">
                         <span class="urgency-icon-svg">${urgencyIcon}</span>
@@ -520,16 +668,30 @@ function createTaskItemElement(item, subj, card, scheduleContent, hasSearch, con
         </div>
     `;
 
-    // Local animated checkbox toggle without whole page reload (Req 1a & Req 3)
+    // Local animated checkbox toggle without whole page reload (Req 1a & Req 3 & Req 5)
     itemEl.querySelector('.compact-checkbox').addEventListener('click', async (e) => {
         e.stopPropagation();
+        const checkboxEl = itemEl.querySelector('.compact-checkbox');
+        if (checkboxEl.dataset.isToggling === 'true') return;
+        checkboxEl.dataset.isToggling = 'true';
+
+        const willBeCompleted = !item.completed;
+        if (willBeCompleted) {
+            checkboxEl.classList.add('checked');
+            checkboxEl.innerHTML = ICONS.check;
+            itemEl.classList.add('is-completed');
+        } else {
+            checkboxEl.classList.remove('checked');
+            checkboxEl.innerHTML = '';
+            itemEl.classList.remove('is-completed');
+        }
         itemEl.classList.add('task-completing-anim');
 
         // Toggle state silently so full-page subscriber does not fire
         await toggleItemComplete(item.id, true /* isSilent */);
 
         // Update progress bar and count locally
-        const subjItems = AppState.items.filter(i => i.subjectId === subj.id);
+        const subjItems = AppState.items.filter(i => (subj ? i.subjectId === subj.id : !i.subjectId));
         const completedItems = subjItems.filter(i => i.completed).length;
         const progressPercent = subjItems.length > 0 ? Math.round((completedItems / subjItems.length) * 100) : 0;
 
@@ -562,7 +724,7 @@ function createTaskItemElement(item, subj, card, scheduleContent, hasSearch, con
             renderCardScheduleTasks(card, subj, scheduleContent, hasSearch, container);
 
             // Update header count and progress
-            const subjItems = AppState.items.filter(i => i.subjectId === subj.id);
+            const subjItems = AppState.items.filter(i => (subj ? i.subjectId === subj.id : !i.subjectId));
             const countEl = card.querySelector('.schedule-tab-count');
             if (countEl) countEl.textContent = subjItems.length;
 
@@ -613,16 +775,20 @@ function renderCardFolders(card, subj, foldersContent) {
         const folderEl = document.createElement('div');
         folderEl.className = 'folder-item-card';
         folderEl.innerHTML = `
-            <div style="flex: 1; min-width: 0;">
+            <div class="folder-main-info" style="flex: 1; min-width: 0; cursor: pointer;" title="Click to open in Windows Explorer">
                 <div class="folder-name-tag">
                     <span class="folder-svg-icon">${ICONS.folder}</span>
                     <span title="${escapeHtml(mat.name)}">${escapeHtml(mat.name)}</span>
                 </div>
                 <div class="folder-path-sub" title="${escapeHtml(mat.filePath)}">${escapeHtml(mat.filePath)}</div>
+                ${mat.notes ? `<div class="folder-notes-sub" title="${escapeHtml(mat.notes)}">${escapeHtml(mat.notes)}</div>` : ''}
             </div>
-            <div style="display: flex; gap: 4px;">
+            <div style="display: flex; gap: 4px; align-items: center;">
                 <button type="button" class="btn btn-sm btn-outline-cyan btn-open-folder" title="Open in Windows Explorer">
                     Open
+                </button>
+                <button type="button" class="compact-action-btn btn-copy-folder" title="Copy Folder Path">
+                    ${ICONS.copy}
                 </button>
                 <button type="button" class="compact-action-btn btn-edit-folder" title="Edit Folder">
                     ${ICONS.edit}
@@ -633,11 +799,28 @@ function renderCardFolders(card, subj, foldersContent) {
             </div>
         `;
 
-        folderEl.querySelector('.btn-open-folder').addEventListener('click', async (e) => {
-            e.stopPropagation();
+        const triggerOpen = async () => {
             const res = await openFolder(mat.filePath);
             if (!res.success) {
                 showToast({ message: res.error || 'Could not open folder in Explorer.', type: 'error' });
+            } else {
+                showToast({ message: `Opened "${mat.name}" in Explorer`, type: 'info' });
+            }
+        };
+
+        folderEl.querySelector('.folder-main-info').addEventListener('click', triggerOpen);
+        folderEl.querySelector('.btn-open-folder').addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerOpen();
+        });
+
+        folderEl.querySelector('.btn-copy-folder').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            try {
+                await navigator.clipboard.writeText(mat.filePath);
+                showToast({ message: 'Folder path copied to clipboard', type: 'success' });
+            } catch (err) {
+                showToast({ message: 'Could not copy path to clipboard', type: 'error' });
             }
         });
 
@@ -658,6 +841,9 @@ function renderCardFolders(card, subj, foldersContent) {
                     const remaining = AppState.materials.filter(m => m.subjectId === subj.id);
                     const countEl = card.querySelector('.folders-tab-count');
                     if (countEl) countEl.textContent = remaining.length;
+                    if (remaining.length === 0) {
+                        renderCardFolders(card, subj, foldersContent);
+                    }
                     showToast({ message: 'Folder link removed', type: 'info' });
                 }
             });

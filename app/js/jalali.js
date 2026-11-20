@@ -36,26 +36,143 @@ export const GREGORIAN_WEEKDAYS_EN = [
     { short: "Sat", full: "Saturday" }
 ];
 
+export const SHAMSI_WEEKDAYS_EN = [
+    { short: "Sat", full: "Saturday" },
+    { short: "Sun", full: "Sunday" },
+    { short: "Mon", full: "Monday" },
+    { short: "Tue", full: "Tuesday" },
+    { short: "Wed", full: "Wednesday" },
+    { short: "Thu", full: "Thursday" },
+    { short: "Fri", full: "Friday" }
+];
+
 /**
- * Check if a Jalali year is a leap year.
+ * Return total days in a Jalali month (1-12) for a given Jalali year.
+ */
+export function getDaysInJalaliMonth(jy, jm) {
+    if (jm >= 1 && jm <= 6) return 31;
+    if (jm >= 7 && jm <= 11) return 30;
+    if (jm === 12) return isJalaliLeapYear(jy) ? 30 : 29;
+    return 30;
+}
+
+function div(a, b) {
+    return ~~(a / b);
+}
+
+function mod(a, b) {
+    return a - b * Math.floor(a / b);
+}
+
+const JALALI_BREAKS = [
+    -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210,
+    1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178
+];
+
+function jalCal(jy) {
+    const bl = JALALI_BREAKS.length;
+    const gy = jy + 621;
+    let leapJ = -14;
+    let jp = JALALI_BREAKS[0];
+    let jm, jump, leap, leapG, march, n, i;
+
+    if (jy < jp || jy >= JALALI_BREAKS[bl - 1]) {
+        throw new Error('Invalid Jalali year ' + jy);
+    }
+
+    for (i = 1; i < bl; i += 1) {
+        jm = JALALI_BREAKS[i];
+        jump = jm - jp;
+        if (jy < jm) break;
+        leapJ = leapJ + div(jump, 33) * 8 + div(mod(jump, 33), 4);
+        jp = jm;
+    }
+    n = jy - jp;
+
+    leapJ = leapJ + div(n, 33) * 8 + div(mod(n, 33) + 3, 4);
+    if (mod(jump, 33) === 4 && jump - n === 4) {
+        leapJ += 1;
+    }
+
+    leapG = div(gy, 4) - div((div(gy, 100) + 1) * 3, 4) - 150;
+    march = 20 + leapJ - leapG;
+
+    if (jump - n < 6) {
+        n = n - jump + div(jump + 4, 33) * 33;
+    }
+    leap = mod(mod(n + 1, 33) - 1, 4);
+    if (leap === -1) {
+        leap = 4;
+    }
+
+    return { leap, gy, march };
+}
+
+function j2d(jy, jm, jd) {
+    const r = jalCal(jy);
+    return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - div(jm, 7) * (jm - 7) + jd - 1;
+}
+
+function d2j(jdn) {
+    const gy = d2g(jdn).gy;
+    let jy = gy - 621;
+    let r = jalCal(jy);
+    let jdn1f = g2d(r.gy, 3, r.march);
+    let jd, jm, k;
+    k = jdn - jdn1f;
+    if (k >= 0) {
+        if (k <= 185) {
+            jm = 1 + div(k, 31);
+            jd = mod(k, 31) + 1;
+            return { jy, jm, jd };
+        } else {
+            k -= 186;
+        }
+    } else {
+        jy -= 1;
+        r = jalCal(jy);
+        jdn1f = g2d(r.gy, 3, r.march);
+        k = jdn - jdn1f;
+        if (k <= 185) {
+            jm = 1 + div(k, 31);
+            jd = mod(k, 31) + 1;
+            return { jy, jm, jd };
+        } else {
+            k -= 186;
+        }
+    }
+    jm = 7 + div(k, 30);
+    jd = mod(k, 30) + 1;
+    return { jy, jm, jd };
+}
+
+function g2d(gy, gm, gd) {
+    let d = div((gy + div(gm - 8, 6) + 100100) * 1461, 4)
+        + div(153 * mod(gm + 9, 12) + 2, 5)
+        + gd - 34840408;
+    d = d - div(div(gy + 100100 + div(gm - 8, 6), 100) * 3, 4) + 752;
+    return d;
+}
+
+function d2g(jdn) {
+    let j = 4 * jdn + 139361631;
+    j = j + div(div(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
+    const i = div(mod(j, 1461), 4) * 5 + 308;
+    const gd = div(mod(i, 153), 5) + 1;
+    const gm = mod(div(i, 153), 12) + 1;
+    const gy = div(j, 1461) - 100100 + div(8 - gm, 6);
+    return { gy, gm, gd };
+}
+
+/**
+ * Check if a Jalali year is a leap year based on Kazimierz M. Borkowski's astronomical algorithm.
  */
 export function isJalaliLeapYear(jy) {
-    const breaks = [
-        -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210,
-        1635, 2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178
-    ];
-    let jp = breaks[0];
-    let jm = -1;
-    for (let i = 1; i < breaks.length; i++) {
-        const jmNext = breaks[i];
-        if (jy >= jp && jy < jmNext) {
-            jm = jmNext;
-            break;
-        }
-        jp = jmNext;
+    try {
+        return jalCal(jy).leap === 0;
+    } catch (_) {
+        return false;
     }
-    const leapJ = jy - jp;
-    return (leapJ % 33) % 4 === 1;
 }
 
 /**
@@ -63,26 +180,7 @@ export function isJalaliLeapYear(jy) {
  * gm is 1-12.
  */
 export function gregorianToJalali(gy, gm, gd) {
-    const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    let jy = (gy <= 1600) ? 0 : 979;
-    gy -= (gy <= 1600) ? 621 : 1600;
-    const gy2 = (gm > 2) ? (gy + 1) : gy;
-    let days = (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
-    jy += 33 * Math.floor(days / 12053);
-    days %= 12053;
-    jy += 4 * Math.floor(days / 1461);
-    days %= 1461;
-    jy += Math.floor((days - 1) / 365);
-    if (days > 0) days = (days - 1) % 365;
-    let jm, jd;
-    if (days < 186) {
-        jm = 1 + Math.floor(days / 31);
-        jd = 1 + (days % 31);
-    } else {
-        jm = 7 + Math.floor((days - 186) / 30);
-        jd = 1 + ((days - 186) % 30);
-    }
-    return { jy, jm, jd };
+    return d2j(g2d(gy, gm, gd));
 }
 
 /**
@@ -90,29 +188,7 @@ export function gregorianToJalali(gy, gm, gd) {
  * jm is 1-12.
  */
 export function jalaliToGregorian(jy, jm, jd) {
-    let gy = (jy <= 979) ? 621 : 1600;
-    jy -= (jy <= 979) ? 0 : 979;
-    let days = (365 * jy) + (Math.floor(jy / 33) * 8) + Math.floor(((jy % 33) + 3) / 4) + 78 + jd + ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
-    gy += 400 * Math.floor(days / 146097);
-    days %= 146097;
-    if (days > 36524) {
-        gy += 100 * Math.floor(--days / 36524);
-        days %= 36524;
-        if (days >= 365) days++;
-    }
-    gy += 4 * Math.floor(days / 1461);
-    days %= 1461;
-    gy += Math.floor((days - 1) / 365);
-    if (days > 0) days = (days - 1) % 365;
-    let gd = days + 1;
-    const sal_a = [0, 31, ((gy % 4 === 0 && gy % 100 !== 0) || (gy % 400 === 0)) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    let gm;
-    for (gm = 0; gm < 13; gm++) {
-        const v = sal_a[gm];
-        if (gd <= v) break;
-        gd -= v;
-    }
-    return { gy, gm, gd };
+    return d2g(j2d(jy, jm, jd));
 }
 
 /**
@@ -137,7 +213,10 @@ export function formatDualDate(dateInput) {
 
     const shamsiShort = `${jy}/${String(jm).padStart(2, '0')}/${String(jd).padStart(2, '0')}`;
     const shamsiFull = `${jd} ${monthObj.nameEn} ${jy}`;
+    const shamsiDisplay = `${jd} ${monthObj.nameEn} (${hours}:${minutes})`;
+    const shamsiWithWeekday = `${gregWeekday.short}, ${jd} ${monthObj.nameEn} (${hours}:${minutes})`;
     const gregFull = `${gregWeekday.full}, ${gregMonthName.slice(0, 3)} ${gd}, ${gy}`;
+    const gregDisplay = `${gregWeekday.short}, ${gregMonthName.slice(0, 3)} ${gd} (${hours}:${minutes})`;
 
     return {
         gy,
@@ -153,8 +232,50 @@ export function formatDualDate(dateInput) {
         timeStr: `${hours}:${minutes}`,
         shamsiShort,
         shamsiFull,
+        shamsiDisplay,
+        shamsiWithWeekday,
         gregFull,
+        gregDisplay,
         headerDual: `${gregWeekday.full}, ${gregMonthName.slice(0, 3)} ${gd}, ${gy}  •  ${jd} ${monthObj.nameEn} ${jy}`,
         dualSummary: `${gy}-${String(gm).padStart(2, '0')}-${String(gd).padStart(2, '0')} (${jd} ${monthObj.nameEn})`
     };
+}
+
+/**
+ * Renders an accessible dual date pill with customized hover tooltip for the other calendar.
+ */
+export function renderDualDatePillHtml(dateInput, options = {}) {
+    const iconHtml = options.iconHtml || '';
+    if (!dateInput) {
+        return `<span class="dual-date-pill deadlineless-pill" tabindex="0" title="No deadline set">
+        ${iconHtml ? `<span class="meta-icon">${iconHtml}</span>` : ''}
+        <span class="dual-date-main-text">No deadline</span>
+    </span>`;
+    }
+    const dual = formatDualDate(dateInput);
+    if (!dual) {
+        return `<span class="dual-date-pill deadlineless-pill" tabindex="0" title="No deadline set">
+        ${iconHtml ? `<span class="meta-icon">${iconHtml}</span>` : ''}
+        <span class="dual-date-main-text">No deadline</span>
+    </span>`;
+    }
+
+    const showWeekday = options.showWeekday ?? true;
+    const showTime = options.showTime ?? true;
+
+    const primaryText = showWeekday
+        ? `${dual.weekdayShort}, ${dual.jd} ${dual.monthNameEn}${showTime ? ` (${dual.timeStr})` : ''}`
+        : `${dual.jd} ${dual.monthNameEn}${showTime ? ` (${dual.timeStr})` : ''}`;
+
+    const otherCalFull = `${dual.gregFull}${showTime ? ` (${dual.timeStr})` : ''}`;
+
+    return `<span class="dual-date-pill" tabindex="0">
+        ${iconHtml ? `<span class="meta-icon">${iconHtml}</span>` : ''}
+        <span class="dual-date-main-text">${primaryText}</span>
+        <span class="dual-date-hover-tooltip" role="tooltip">
+            <span class="tooltip-other-cal-title">Gregorian Calendar</span>
+            <span class="tooltip-other-cal-val">${otherCalFull}</span>
+            <span class="tooltip-shamsi-sub">Shamsi: ${dual.shamsiFull} • ${dual.timeStr}</span>
+        </span>
+    </span>`;
 }

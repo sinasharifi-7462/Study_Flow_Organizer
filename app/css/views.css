@@ -432,47 +432,89 @@
 
 .compact-task-check,
 .compact-checkbox {
-    width: 18px;
-    height: 18px;
-    border-radius: 5px;
-    border: 1.5px solid var(--input-border);
+    width: 23px;
+    height: 23px;
+    border-radius: 7px;
+    border: 2px solid var(--card-border-strong);
     background: var(--card-surface-glass);
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.18s ease, border-color 0.18s ease;
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+                background-color 0.22s ease,
+                border-color 0.22s ease,
+                box-shadow 0.25s ease;
     flex-shrink: 0;
-    color: var(--text-primary);
-    font-size: 11px;
+    color: var(--color-on-primary, #ffffff);
+    position: relative;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .compact-task-check:hover,
 .compact-checkbox:hover {
     border-color: var(--color-primary);
     background: var(--color-primary-subtle);
-    transform: scale(1.08);
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3.5px var(--color-primary-subtle);
 }
 
 .compact-task-check:active,
 .compact-checkbox:active {
-    transform: scale(0.85);
+    transform: scale(0.88);
 }
 
 @keyframes checkSpringPop {
-    0% { transform: scale(0.7); }
-    55% { transform: scale(1.24); }
-    100% { transform: scale(1); }
+    0% {
+        transform: scale(0.68);
+        box-shadow: 0 0 0 0 var(--color-primary-glow);
+    }
+    50% {
+        transform: scale(1.22);
+        box-shadow: 0 0 0 6px rgba(var(--color-primary-rgb, 25, 114, 120), 0);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+@keyframes checkmarkStroke {
+    0% {
+        transform: scale(0.3) rotate(-15deg);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.25) rotate(4deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
 }
 
 .compact-task-check.checked,
 .compact-checkbox.checked,
 .compact-task-item.is-completed .compact-checkbox,
-.kanban-card.is-completed .compact-checkbox {
+.kanban-card.is-completed .compact-checkbox,
+.timeline-node.is-completed .compact-checkbox {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    color: var(--text-primary);
-    animation: checkSpringPop 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: var(--color-on-primary, #ffffff);
+    animation: checkSpringPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 2px 8px var(--color-primary-glow);
+}
+
+.compact-checkbox svg,
+.compact-task-check svg {
+    width: 14px;
+    height: 14px;
+    stroke-width: 2.8;
+    stroke: currentColor;
+    fill: none;
+    animation: checkmarkStroke 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 .task-empty-state {
@@ -693,6 +735,15 @@
 .folder-item-card:hover {
     background: var(--card-surface-hover);
     border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.folder-main-info {
+    transition: opacity 0.15s ease;
+}
+
+.folder-main-info:hover .folder-name-tag {
+    color: var(--color-primary);
 }
 
 .folder-name-tag {
@@ -702,6 +753,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    transition: color 0.15s ease;
 }
 
 .folder-path-sub {
@@ -711,7 +763,18 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 220px;
+    max-width: 100%;
+}
+
+.folder-notes-sub {
+    font-size: 0.69rem;
+    color: var(--text-secondary);
+    margin-top: 3px;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 /* ==========================================================================
@@ -2223,7 +2286,11 @@
     color: var(--text-muted);
 }
 
-/* Floating Jump to Today Button (Req 8) */
+/* ==========================================================================
+   FLOATING TIMELINE JUMP & OLDER TASKS (Requirements 1, 2, 3)
+   ========================================================================== */
+
+/* Single Floating Jump to Current Date Button (Req 2) */
 .timeline-floating-jump-today {
     position: fixed;
     bottom: 28px;
@@ -2232,29 +2299,511 @@
     align-items: center;
     gap: 8px;
     background: var(--color-primary);
-    color: var(--text-primary);
-    padding: 10px 18px;
+    color: var(--color-on-primary, #ffffff);
+    padding: 10px 20px;
     border-radius: 30px;
-    border: 1px solid var(--card-border);
-    box-shadow: var(--shadow-lg), 0 0 14px var(--color-primary-glow);
+    border: 1px solid var(--card-border-strong);
+    box-shadow: var(--shadow-lg), 0 0 16px var(--color-primary-glow);
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
-    z-index: 120;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(12px);
-}
-
-.timeline-floating-jump-today.visible {
-    opacity: 1;
+    z-index: 999;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0.95;
     pointer-events: auto;
-    transform: translateY(0);
+    backdrop-filter: blur(8px);
 }
 
 .timeline-floating-jump-today:hover {
     background: var(--color-primary-light);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg), 0 0 18px var(--color-primary-glow);
+    color: var(--color-on-primary, #ffffff);
+    transform: translateY(-2px) scale(1.03);
+    opacity: 1;
+    box-shadow: var(--shadow-lg), 0 0 22px var(--color-primary-glow);
+}
+
+.timeline-floating-jump-today:active {
+    transform: translateY(0) scale(0.96);
+}
+
+/* Timeline Subtle Revealing Older Tasks Button (Req 3) */
+.timeline-older-past-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8px;
+    position: relative;
+}
+
+.timeline-subtle-older-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: transparent;
+    border: 1px dashed var(--card-border-subtle);
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    margin: 4px 0 10px 0;
+}
+
+.timeline-subtle-older-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--color-primary);
+    background: var(--card-surface-glass);
+    transform: translateY(-1px);
+}
+
+.timeline-subtle-older-btn .subtle-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    opacity: 0.7;
+}
+
+.timeline-subtle-older-btn .subtle-btn-chevron {
+    display: inline-flex;
+    align-items: center;
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.timeline-subtle-older-btn .subtle-btn-chevron.is-rotated {
+    transform: rotate(180deg);
+}
+
+.timeline-older-past-drawer {
+    width: 100%;
+    transition: all 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.timeline-older-past-drawer.is-collapsed {
+    display: none;
+    max-height: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.timeline-older-past-drawer.is-expanded {
+    display: block;
+    max-height: none;
+    opacity: 1;
+    pointer-events: auto;
+    animation: timelineFlowUp 0.3s ease;
+}
+
+/* ==========================================================================
+   DUAL CALENDAR HOVER TOOLTIP SYSTEM (Requirement 1)
+   ========================================================================== */
+
+/* Reusable Dual Date Pill for Cards, Timeline & Kanban */
+.dual-date-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 4px;
+    margin: -1px -4px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.dual-date-pill:hover,
+.dual-date-pill:focus-visible {
+    background: var(--color-primary-subtle);
+    color: var(--color-primary-light);
+    outline: none;
+}
+
+.dual-date-hover-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    opacity: 0;
+    pointer-events: none;
+    background: var(--card-surface-popover);
+    border: 1px solid var(--card-border-strong);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: var(--shadow-lg), 0 4px 18px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.74rem;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dual-date-hover-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--card-border-strong);
+}
+
+.dual-date-pill:hover .dual-date-hover-tooltip,
+.dual-date-pill:focus-visible .dual-date-hover-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.tooltip-other-cal-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--color-primary);
+}
+
+.tooltip-other-cal-val {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.tooltip-shamsi-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+}
+
+/* Main Shamsi Calendar Day Cells Numbers & Customized Hover Action */
+.calendar-day-numbers.has-custom-hover {
+    position: relative;
+    cursor: pointer;
+}
+
+.calendar-day-numbers.has-custom-hover:hover,
+.calendar-day-numbers.has-custom-hover:focus-visible {
+    z-index: 10000;
+}
+
+.day-shamsi-primary {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.day-greg-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-left: 4px;
+}
+
+.calendar-hover-popover {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    opacity: 0;
+    pointer-events: none;
+    background: var(--card-surface-popover);
+    border: 1px solid var(--card-border-strong);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: var(--shadow-lg), 0 4px 18px rgba(0, 0, 0, 0.45);
+    white-space: nowrap;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.74rem;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.calendar-hover-popover::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--card-border-strong);
+}
+
+.calendar-day-numbers.has-custom-hover:hover .calendar-hover-popover,
+.calendar-day-numbers.has-custom-hover:focus-visible .calendar-hover-popover,
+.week-col-dates.has-custom-hover:hover .calendar-hover-popover {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.cal-popover-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cal-popover-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--card-surface-sunken);
+    color: var(--color-primary);
+    border: 1px solid var(--card-border-subtle);
+}
+
+.cal-popover-row.primary strong {
+    color: var(--text-primary);
+}
+
+.cal-popover-row.secondary span {
+    color: var(--text-secondary);
+}
+
+/* Timeline Anchor Hover Tooltip */
+.timeline-now-pill.has-custom-hover {
+    position: relative;
+    cursor: pointer;
+}
+
+.timeline-anchor-hover-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    opacity: 0;
+    pointer-events: none;
+    background: var(--card-surface-popover);
+    border: 1px solid var(--card-border-strong);
+    border-radius: 8px;
+    padding: 8px 12px;
+    box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.74rem;
+    transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.timeline-anchor-hover-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--card-border-strong);
+}
+
+.timeline-now-pill.has-custom-hover:hover .timeline-anchor-hover-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+/* ==========================================================================
+   BLACK & WHITE THEME TITLE BACKGROUND DIMMING (Requirement 4)
+   ========================================================================== */
+body[data-palette="black"] .subject-header-banner,
+body.palette-black .subject-header-banner {
+    filter: brightness(0.85) contrast(1.05);
+}
+
+body[data-palette="black"] .subject-title,
+body.palette-black .subject-title {
+    color: #ffffff !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+/* ==========================================================================
+   FREE TO-DO LIST & DEADLINELESS TASKS ENHANCEMENTS
+   ========================================================================== */
+.subject-card.general-card .subject-header-banner {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+    border-bottom: 1px solid var(--card-border-subtle);
+    color: #f8fafc;
+}
+
+[data-palette="nord_light"] .subject-card.general-card .subject-header-banner {
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    color: #0f172a;
+}
+
+[data-palette="nord_light"] .general-card .subject-subtitle {
+    color: #334155;
+}
+
+body.theme-flat .subject-card.general-card .subject-header-banner {
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+body.theme-flat[data-palette="nord_light"] .subject-card.general-card .subject-header-banner {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+.general-card .subject-subtitle {
+    font-size: 0.78rem;
+    opacity: 0.85;
+}
+
+.add-course-card {
+    border: 2px dashed var(--card-border-strong);
+    background: var(--card-surface-glass);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    padding: 30px 20px;
+    text-align: center;
+    transition: all 0.24s ease;
+}
+
+.add-course-card:hover {
+    border-color: var(--color-primary);
+    background: var(--card-surface-hover);
+}
+
+.add-course-prompt {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 280px;
+}
+
+.add-course-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-primary-subtle);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+}
+
+.add-course-prompt h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.add-course-prompt p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.dual-date-pill.deadlineless-pill {
+    border: 1px dashed var(--card-border-strong);
+    background: var(--card-surface-sunken);
+    color: var(--text-muted);
+}
+
+.dual-date-pill.deadlineless-pill:hover {
+    color: var(--text-primary);
+    border-color: var(--color-primary);
+}
+
+.compact-urgency-badge.none {
+    color: var(--text-muted);
+}
+
+.kanban-card-subject-tag.general-tag {
+    background: var(--card-surface-sunken);
+    border: 1px solid var(--card-border-subtle);
+    color: var(--text-muted);
+}
+
+.timeline-deadlineless-section {
+    background: var(--card-surface-glass);
+    border: 1px solid var(--card-border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.timeline-deadlineless-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.timeline-deadlineless-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--card-border-subtle);
+}
+
+.calendar-unscheduled-drawer {
+    background: var(--card-surface-glass);
+    border: 1px solid var(--card-border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.calendar-unscheduled-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.calendar-unscheduled-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.calendar-unscheduled-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--card-surface-sunken);
+    border: 1px dashed var(--card-border-strong);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    cursor: grab;
+    user-select: none;
+    transition: all 0.2s ease;
+}
+
+.calendar-unscheduled-chip:hover {
+    border-color: var(--color-primary);
+    background: var(--card-surface-hover);
+    transform: translateY(-1px);
+}
+
+.calendar-unscheduled-chip.is-dragging {
+    opacity: 0.45;
+}
+
+.calendar-unscheduled-chip.is-completed {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+.unscheduled-chip-subj {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
 }

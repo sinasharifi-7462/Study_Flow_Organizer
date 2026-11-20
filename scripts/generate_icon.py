@@ -120,15 +120,15 @@ if __name__ == '__main__':
     img_256.save(os.path.join(app_dir, 'icon.png'), format='PNG')
     img_256.save(os.path.join(root_dir, 'icon.png'), format='PNG')
 
-    # Save multi-resolution Windows ICO
+    # Save multi-resolution Windows ICO with standard BMP format for Windows PE compatibility
     ico_sizes = [(256, 256), (128, 128), (64, 64), (48, 48), (32, 32), (16, 16)]
     ico_path_app = os.path.join(app_dir, 'favicon.ico')
     ico_path_root = os.path.join(root_dir, 'Study_Flow_Organizer.ico')
     ico_path_scripts = os.path.join(scripts_dir, 'app.ico')
 
-    img_256.save(ico_path_app, format='ICO', sizes=ico_sizes)
-    img_256.save(ico_path_root, format='ICO', sizes=ico_sizes)
-    img_256.save(ico_path_scripts, format='ICO', sizes=ico_sizes)
+    img_256.save(ico_path_app, format='ICO', bitmap_format='bmp', sizes=ico_sizes)
+    img_256.save(ico_path_root, format='ICO', bitmap_format='bmp', sizes=ico_sizes)
+    img_256.save(ico_path_scripts, format='ICO', sizes=ico_sizes, bitmap_format='bmp')
 
     print("Successfully generated all icons:")
     print(" - app/icon.png")

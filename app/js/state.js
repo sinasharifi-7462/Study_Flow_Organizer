@@ -145,14 +145,14 @@ export function normalizeData(raw) {
             typeId: item.typeId || (isTask ? 'tt_hw' : 'et_quiz'),
             typeName: item.typeName || (isTask ? 'HW' : 'Quiz'),
             typeIcon: item.typeIcon || (isTask ? '📚' : '📝'),
-            subjectId: item.subjectId,
+            subjectId: (item.subjectId && typeof item.subjectId === 'string' && item.subjectId.trim()) ? item.subjectId.trim() : null,
             title: item.title || "",
             extraInfo: {
                 number: item.extraInfo?.number ?? item.detailNumber ?? "",
                 location: item.extraInfo?.location ?? item.location ?? "",
                 notes: item.extraInfo?.notes ?? item.notes ?? ""
             },
-            dueDate: item.dueDate || new Date().toISOString(),
+            dueDate: (item.dueDate === null || item.dueDate === "") ? null : (item.dueDate || null),
             inProgress: Boolean(item.inProgress),
             completed: Boolean(item.completed),
             createdAt: item.createdAt || new Date().toISOString()
@@ -188,7 +188,7 @@ export function normalizeData(raw) {
     return {
         $schema: "StudyFlowOrganizer_v4",
         metadata: {
-            version: "4.2.0",
+            version: "4.4.0",
             appName: "Study Flow Organizer",
             lastSaved: raw.metadata?.lastSaved || new Date().toISOString(),
             language: "en"
@@ -443,32 +443,61 @@ export async function addGlobalTag(tagName) {
     }
 }
 
+export async function togglePinGeneralTasks() {
+    if (!AppState.config) AppState.config = {};
+    AppState.config.isGeneralPinned = !AppState.config.isGeneralPinned;
+    await persistCurrentState();
+}
+
 export async function addOrUpdateItem(itemData) {
     let finalItem = null;
     const cleanId = (typeof itemData.id === 'string' && itemData.id.trim()) ? itemData.id.trim() : null;
+
     if (cleanId) {
         const idx = AppState.items.findIndex(i => i.id === cleanId);
         if (idx !== -1) {
-            AppState.items[idx] = { ...AppState.items[idx], ...itemData, id: cleanId };
+            const existing = AppState.items[idx];
+            const updatedSubjectId = itemData.subjectId !== undefined
+                ? ((itemData.subjectId && typeof itemData.subjectId === 'string' && itemData.subjectId.trim()) ? itemData.subjectId.trim() : null)
+                : existing.subjectId;
+            const updatedDueDate = itemData.dueDate !== undefined
+                ? ((itemData.dueDate === null || itemData.dueDate === "") ? null : itemData.dueDate)
+                : existing.dueDate;
+
+            AppState.items[idx] = {
+                ...existing,
+                ...itemData,
+                id: cleanId,
+                subjectId: updatedSubjectId,
+                dueDate: updatedDueDate
+            };
             finalItem = AppState.items[idx];
         } else {
+            const cleanSubjectId = (itemData.subjectId && typeof itemData.subjectId === 'string' && itemData.subjectId.trim()) ? itemData.subjectId.trim() : null;
+            const cleanDueDate = (itemData.dueDate === null || itemData.dueDate === "") ? null : (itemData.dueDate || null);
             finalItem = {
                 completed: false,
                 inProgress: Boolean(itemData.inProgress),
                 createdAt: itemData.createdAt || new Date().toISOString(),
                 ...itemData,
-                id: cleanId
+                id: cleanId,
+                subjectId: cleanSubjectId,
+                dueDate: cleanDueDate
             };
             AppState.items.push(finalItem);
         }
     } else {
+        const cleanSubjectId = (itemData.subjectId && typeof itemData.subjectId === 'string' && itemData.subjectId.trim()) ? itemData.subjectId.trim() : null;
+        const cleanDueDate = (itemData.dueDate === null || itemData.dueDate === "") ? null : (itemData.dueDate || null);
         const newId = `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
         finalItem = {
             completed: false,
             inProgress: Boolean(itemData.inProgress),
             createdAt: new Date().toISOString(),
             ...itemData,
-            id: newId
+            id: newId,
+            subjectId: cleanSubjectId,
+            dueDate: cleanDueDate
         };
         AppState.items.push(finalItem);
     }
@@ -546,12 +575,19 @@ export async function deleteMaterial(materialId) {
     return mat;
 }
 
-export function doesSubjectMatchQuery(subj, query) {
+export function doesSubjectMatchQuery(subj, query, includeMaterials = true) {
     if (!subj) return false;
     if (!query || !query.trim()) return true;
     const tokens = query.toLowerCase().trim().split(/\s+/).filter(Boolean);
     const tagsStr = Array.isArray(subj.tags) ? subj.tags.join(' ') : '';
-    const corpus = `${subj.title || ''} ${subj.code || ''} ${subj.instructor || ''} ${tagsStr}`.toLowerCase();
+    let materialsStr = '';
+    if (includeMaterials && Array.isArray(AppState.materials)) {
+        materialsStr = AppState.materials
+            .filter(m => m.subjectId === subj.id)
+            .map(m => `${m.name || ''} ${m.notes || ''} ${m.filePath || ''}`)
+            .join(' ');
+    }
+    const corpus = `${subj.title || ''} ${subj.code || ''} ${subj.instructor || ''} ${tagsStr} ${materialsStr}`.toLowerCase();
     return tokens.every(token => corpus.includes(token));
 }
 
@@ -589,7 +625,7 @@ export function getFilteredItems(options = {}) {
         } else if (AppState.activeFilter === 'urgent') {
             const now = Date.now();
             result = result.filter(i => {
-                if (i.completed) return false;
+                if (i.completed || !i.dueDate) return false;
                 const diffHours = (new Date(i.dueDate).getTime() - now) / (1000 * 60 * 60);
                 return diffHours <= 48;
             });
@@ -601,8 +637,8 @@ export function getFilteredItems(options = {}) {
         const tokens = rawQuery.toLowerCase().split(/\s+/).filter(Boolean);
 
         result = result.filter(item => {
-            const subj = AppState.subjects.find(s => s.id === item.subjectId);
-            const courseTitle = subj ? subj.title : '';
+            const subj = item.subjectId ? AppState.subjects.find(s => s.id === item.subjectId) : null;
+            const courseTitle = subj ? subj.title : 'General Free To-Do';
             const courseCode = subj ? (subj.code || '') : '';
             const instructor = subj ? (subj.instructor || '') : '';
             const tags = subj && Array.isArray(subj.tags) ? subj.tags.join(' ') : '';
@@ -614,6 +650,8 @@ export function getFilteredItems(options = {}) {
                     const dual = formatDualDate(d);
                     dateInfo = `${d.getFullYear()} ${d.getMonth() + 1} ${d.getDate()} ${dual ? `${dual.gregFull} ${dual.shamsiFull}` : ''}`;
                 } catch (_) {}
+            } else {
+                dateInfo = 'no deadline deadlineless whenever';
             }
 
             const corpus = [

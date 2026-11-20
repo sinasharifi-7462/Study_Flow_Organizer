@@ -29,9 +29,9 @@ export const ITEM_MODAL_HTML = `<div id="itemModal" class="modal-overlay">
 
                     <!-- Course Subject (Custom Styled Dropdown) -->
                     <div class="form-group">
-                        <label class="form-label">Course Subject:</label>
+                        <label class="form-label">Course Subject (or General / Free To-Do):</label>
                         <div id="itemSubjectSelectWrap"></div>
-                        <input type="hidden" id="itemSubjectSelect" required>
+                        <input type="hidden" id="itemSubjectSelect">
                     </div>
 
                     <!-- Extra Info Section -->
@@ -76,19 +76,25 @@ export const ITEM_MODAL_HTML = `<div id="itemModal" class="modal-overlay">
                     </div>
 
                     <!-- Custom Dual Date & Time Picker Section (Month Calendar Viewer) -->
-                    <div class="form-group">
-                        <label class="form-label">
-                            <span>Target Due Date & Time:</span>
-                            <span style="font-size: 0.72rem; color: var(--color-primary); font-weight: 600;">1-Click Quick Presets:</span>
-                        </label>
+                    <div class="form-group" id="itemModalDateSectionWrap">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                            <label class="form-label" style="margin-bottom: 0;">
+                                <span>Target Due Date & Time:</span>
+                            </label>
+                            <label class="no-deadline-checkbox-label" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: var(--text-muted); user-select: none;">
+                                <input type="checkbox" id="itemNoDeadlineCheck" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--color-primary);">
+                                <span>No deadline (General / Whenever)</span>
+                            </label>
+                        </div>
                         <div class="date-quick-presets" id="modalDatePresetsWrap">
+                            <button type="button" class="date-preset-chip date-preset-none" data-preset="none">No Deadline</button>
                             <button type="button" class="date-preset-chip" data-preset="today">Today (23:59)</button>
                             <button type="button" class="date-preset-chip active" data-preset="tomorrow">Tomorrow (23:59)</button>
                             <button type="button" class="date-preset-chip" data-preset="this_friday">This Fri (23:59)</button>
                             <button type="button" class="date-preset-chip" data-preset="next_monday">Next Mon (23:59)</button>
                             <button type="button" class="date-preset-chip" data-preset="in_7_days">+7 Days</button>
                         </div>
-                        <div class="dual-date-picker-box">
+                        <div class="dual-date-picker-box item-pickers-wrap" id="itemModalPickersBox">
                             <!-- Custom Dual Date Picker Slot (Interactive Month Grid) -->
                             <div id="customDatePickerSlot"></div>
 
@@ -116,11 +122,6 @@ export const SUBJECT_MODAL_HTML = `<div id="subjectModal" class="modal-overlay">
                     <div class="form-group">
                         <label class="form-label" for="subjectNameInput">Subject Name:</label>
                         <input type="text" id="subjectNameInput" class="form-input" placeholder="e.g. Fluid Mechanics or Computer Science" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="subjectCodeInput">Course Code / Units / Instructor:</label>
-                        <input type="text" id="subjectCodeInput" class="form-input" placeholder="e.g. CS-101 • 3 Units • Hall 204">
                     </div>
 
                     <!-- Course Tags Section (Req 2) -->
@@ -160,7 +161,7 @@ export const FOLDER_MODAL_HTML = `<div id="folderModal" class="modal-overlay">
                         <input type="hidden" id="folderSubjectSelect" required>
                     </div>
 
-                    <div class="material-drop-box">
+                    <div class="material-drop-box" id="folderDropZone">
                         <label class="form-label">Folder Location:</label>
                         <div class="material-picker-row">
                             <button type="button" class="btn btn-primary btn-sm" id="btnBrowseFolder">
@@ -169,14 +170,28 @@ export const FOLDER_MODAL_HTML = `<div id="folderModal" class="modal-overlay">
                             <button type="button" class="btn btn-secondary btn-sm" id="btnPasteFolderPath">
                                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg> Paste Path
                             </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnTestOpenFolder" title="Open this folder in Windows Explorer right now">
+                                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Test Open
+                            </button>
+                        </div>
+                        <div class="folder-drop-hint">
+                            <span>Drop any folder or file here from Windows Explorer</span>
                         </div>
                         <div class="form-group" style="margin-top: 6px;">
                             <label class="form-label" style="font-size: 0.74rem;">Folder Label:</label>
                             <input type="text" id="folderNameInput" class="form-input" placeholder="e.g. Lectures & Slides, Lab Manuals..." required>
+                            <div class="folder-preset-chips" id="folderPresetChips">
+                                <span class="folder-chip-label">Presets:</span>
+                                <button type="button" class="folder-preset-chip" data-label="Lectures & Slides">Lectures & Slides</button>
+                                <button type="button" class="folder-preset-chip" data-label="Assignments & Labs">Assignments & Labs</button>
+                                <button type="button" class="folder-preset-chip" data-label="Past Exams & Solutions">Past Exams</button>
+                                <button type="button" class="folder-preset-chip" data-label="Project Files">Project Files</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="form-label" style="font-size: 0.74rem;">Folder Path on Disk:</label>
                             <input type="text" id="folderPathInput" class="form-input" placeholder="e.g. D:\\University\\Course\\Materials" required>
+                            <div id="folderPathStatus" class="folder-path-status" style="display: none;"></div>
                         </div>
                     </div>
 
@@ -439,6 +454,22 @@ export const SETTINGS_MODAL_HTML = `<div id="settingsModal" class="modal-overlay
                                         <span id="aiModelStatusText" style="font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; display: block;"></span>
                                     </div>
 
+                                    <!-- Automatic Fallback System -->
+                                    <div class="form-group" style="margin-top: 12px; margin-bottom: 10px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                            <label class="form-label" style="font-size: 0.78rem; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 5px;">
+                                                <span>🛡️ Automatic Model Fallback</span>
+                                            </label>
+                                            <span class="ai-status-pill status-configured" id="aiFallbackStatusPill" style="font-size: 0.68rem; padding: 1px 7px;">Active</span>
+                                        </div>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.4;">
+                                            When high demand (503) or rate limit (429) spikes occur, the assistant automatically fails over across this prioritized chain:
+                                        </div>
+                                        <div id="aiFallbackChainBadges" style="display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 8px 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+                                            <!-- Dynamically populated -->
+                                        </div>
+                                    </div>
+
                                     <!-- Action Buttons -->
                                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px;">
                                         <button type="button" class="btn btn-secondary btn-sm" id="btnTestAiConnection">Test</button>
@@ -583,34 +614,38 @@ export const SETTINGS_MODAL_HTML = `<div id="settingsModal" class="modal-overlay
 
 export const AI_MODAL_HTML = `<div id="aiModal" class="modal-overlay">
         <div class="modal-window ai-modal-window">
-            <!-- Minimalist AI Header -->
+            <!-- Minimalist AI Header Ribbon -->
             <div class="modal-header ai-modal-header">
-                <div class="ai-header-brand">
+                <div class="ai-header-brand" title="AI Assistant">
                     <div class="ai-header-icon-box">
                         <svg viewBox="0 0 24 24" fill="currentColor" class="ai-sparkle-icon ai-header-svg">
                             <path d="M10 3C10 7.418 6.418 11 2 11C6.418 11 10 14.582 10 19C10 14.582 13.582 11 18 11C13.582 11 10 7.418 10 3Z"/>
                             <path d="M18 2C18 4.209 16.209 6 14 6C16.209 6 18 7.791 18 10C18 7.791 19.791 6 22 6C19.791 6 18 4.209 18 2Z"/>
                         </svg>
                     </div>
-                    <div>
-                        <h2 class="ai-modal-title">AI Schedule Assistant</h2>
-                        <p class="ai-modal-subtitle">Schedule deadlines, tasks, and exams via voice or text</p>
-                    </div>
+                    <h2 class="ai-modal-title">AI Assistant</h2>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="ai-header-actions-wrap">
                     <!-- Small History Actions: Preview Last Changes & Undo -->
                     <div id="aiHistoryActions" class="ai-history-actions hidden">
                         <button type="button" class="btn-ai-history" id="btnAiPreviewLast" title="Preview changes from last session">
-                            <span><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: -2px; margin-right: 4px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Last Changes</span>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" class="btn-ai-history-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <span>Last Changes</span>
                         </button>
                         <button type="button" class="btn-ai-history btn-ai-undo" id="btnAiUndoLast" title="Undo all changes from last session">
-                            <span>↺ Undo</span>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" class="btn-ai-history-icon"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+                            <span>Undo</span>
                         </button>
                     </div>
                     <button type="button" id="aiActiveModelBadge" class="ai-model-badge" title="Click to configure in Settings">
                         Gemini
                     </button>
-                    <button type="button" class="modal-close-btn" id="aiModalCloseBtn">&times;</button>
+                    <button type="button" class="modal-close-btn" id="aiModalCloseBtn" title="Close AI Assistant" aria-label="Close dialog">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -624,6 +659,22 @@ export const AI_MODAL_HTML = `<div id="aiModal" class="modal-overlay">
                     <div class="ai-context-item">
                         <span class="context-label">Courses:</span>
                         <strong id="aiContextCourses">0 courses</strong>
+                    </div>
+                </div>
+
+                <!-- Graphical View for Multi-Model Fallback System (Req 6) -->
+                <div class="ai-fallback-pipeline-card" id="aiFallbackPipelineGraphic">
+                    <div class="ai-pipeline-top-row">
+                        <div class="ai-pipeline-title-box">
+                            <svg viewBox="0 0 24 24" class="ai-pipeline-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <span>Multi-Model Fallback Chain</span>
+                        </div>
+                        <span class="ai-pipeline-badge" id="aiPipelineStatusBadge">503/429 Auto-Failover</span>
+                    </div>
+                    <div class="ai-pipeline-flow-scroll" id="aiPipelineNodesFlow">
+                        <!-- Populated dynamically by aiModal.js -->
                     </div>
                 </div>
 
@@ -692,11 +743,12 @@ export const AI_MODAL_HTML = `<div id="aiModal" class="modal-overlay">
                 <div id="aiThinkingState" class="ai-thinking-state hidden">
                     <div class="ai-thinking-spinner"></div>
                     <p id="aiThinkingStatus">Analyzing schedule...</p>
-                    <span style="font-size: 0.73rem; color: var(--text-muted);">Correlating dates, courses & events</span>
+                    <span id="aiThinkingSubtext" style="font-size: 0.73rem; color: var(--text-muted);">Correlating dates, courses & events</span>
                 </div>
 
-                <!-- Error Banner -->
+                <!-- Error & Notice Banners -->
                 <div id="aiErrorBanner" class="ai-error-banner hidden"></div>
+                <div id="aiNoticeBanner" class="ai-notice-banner hidden"></div>
 
                 <!-- Editable Proposed Actions Preview Section -->
                 <div id="aiPreviewContainer" class="ai-preview-container hidden">
@@ -722,7 +774,7 @@ export const AI_MODAL_HTML = `<div id="aiModal" class="modal-overlay">
 
             <div class="modal-footer ai-modal-footer">
                 <span style="font-size: 0.72rem; color: var(--text-muted);">
-                    Understands natural voice &amp; text instructions in English and Persian.
+                    Natural language voice &amp; text in English and Persian.
                 </span>
                 <button type="button" class="btn btn-secondary btn-sm" id="btnAiClose">Close</button>
             </div>

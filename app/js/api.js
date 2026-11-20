@@ -102,17 +102,58 @@ export async function saveData(payload) {
 }
 
 /**
+ * Sanitizes and cleans user-entered folder paths.
+ * Handles file:/// URIs, URL-encoded spaces (%20), surrounding quotes, and slashes.
+ * @param {string} rawPath
+ * @returns {string}
+ */
+export function sanitizeFolderPath(rawPath) {
+    if (!rawPath || typeof rawPath !== 'string') return '';
+    let p = rawPath.trim().replace(/^["']|["']$/g, '').trim();
+
+    // Handle file:// URIs
+    if (/^file:\/\//i.test(p)) {
+        p = p.replace(/^file:\/\/\/?/i, '');
+        try {
+            p = decodeURIComponent(p);
+        } catch (e) {}
+    }
+
+    // Normalize slashes on Windows drive paths (e.g. D:/path -> D:\path)
+    if (/^[a-zA-Z]:[\\\/]/.test(p)) {
+        p = p.replace(/\//g, '\\');
+    }
+    return p;
+}
+
+/**
  * Open local folder in Windows File Explorer via server.
+ * If server is disconnected, provides a graceful clipboard copy fallback.
  */
 export async function openFolder(folderPath) {
+    const cleanPath = sanitizeFolderPath(folderPath);
+    if (!cleanPath) {
+        return { success: false, error: 'Invalid folder path' };
+    }
+
     if (!serverConnected) {
-        return { success: false, error: 'Local server required to launch File Explorer' };
+        try {
+            await navigator.clipboard.writeText(cleanPath);
+            return {
+                success: false,
+                fallbackCopied: true,
+                path: cleanPath,
+                error: 'Local server not running. Path copied to clipboard!'
+            };
+        } catch (e) {
+            return { success: false, error: 'Local server required to launch File Explorer' };
+        }
     }
     try {
         const res = await fetch('/api/open-folder', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ folderPath })
+            body: JSON.stringify({ folderPath: cleanPath })
         });
         return await res.json();
     } catch (e) {
@@ -133,14 +174,59 @@ export async function openDataDirectory() {
 }
 
 /**
- * Open native Windows Folder Browser dialog via server.
+ * Open native Windows Folder Browser dialog via server, starting at initialPath if given.
  */
-export async function pickFolder() {
+export async function pickFolder(initialPath = '') {
     if (!serverConnected) {
         return { success: false, error: 'Local server required for native folder picker' };
     }
     try {
-        const res = await fetch('/api/pick-folder', { method: 'POST' });
+        const cleanInitial = sanitizeFolderPath(initialPath);
+        const res = await fetch('/api/pick-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initialPath: cleanInitial })
+        });
+        return await res.json();
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Validates a folder path on disk and retrieves its file count and status.
+ */
+export async function getFolderInfo(folderPath) {
+    if (!serverConnected) {
+        return { success: false, error: 'Local server required to inspect filesystem' };
+    }
+    try {
+        const cleanPath = sanitizeFolderPath(folderPath);
+        const res = await fetch('/api/folder-info', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folderPath: cleanPath })
+        });
+        return await res.json();
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Creates a folder on disk if it does not yet exist.
+ */
+export async function createFolderOnDisk(folderPath) {
+    if (!serverConnected) {
+        return { success: false, error: 'Local server required to create directories' };
+    }
+    try {
+        const cleanPath = sanitizeFolderPath(folderPath);
+        const res = await fetch('/api/create-folder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folderPath: cleanPath })
+        });
         return await res.json();
     } catch (e) {
         return { success: false, error: e.message };

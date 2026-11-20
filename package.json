@@ -1,13 +1,13 @@
 {
   "name": "study-flow-organizer",
-  "version": "4.3.0",
+  "version": "4.4.0",
   "description": "Smart Academic Schedule, Folders Hub & Task Organizer",
   "main": "server/server.js",
   "scripts": {
     "start": "node desktop/launcher.js",
     "server": "node server/server.js",
     "build:exe": "node scripts/build_standalone_exe.js",
-    "build:launcher": "gcc -mwindows -O2 scripts/launcher.c -o Study_Flow_Organizer.exe -lws2_32",
+    "build:launcher": "windres -i scripts/app.rc -o scripts/app.o -O coff -I . && gcc -mwindows -O2 scripts/launcher.c scripts/app.o -o Study_Flow_Organizer.exe -lws2_32",
     "test": "vitest run",
     "check": "tsc -p jsconfig.json",
     "test:watch": "vitest"
@@ -27,6 +27,8 @@
   "author": "Amirali Navidi & Sina Sharifi",
   "license": "MIT",
   "devDependencies": {
+    "caxa": "^3.0.1",
+    "rcedit": "^5.0.2",
     "typescript": "^7.0.2",
     "vitest": "^5.1.0"
   }

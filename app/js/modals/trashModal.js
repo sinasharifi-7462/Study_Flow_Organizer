@@ -105,7 +105,6 @@ export function renderTrashList() {
                     <div class="trash-item-title-row">
                         <span class="trash-type-badge">${ICONS.viewCards} Course</span>
                         <span class="trash-item-name">${escapeHtml(subj.title)}</span>
-                        ${subj.code ? `<span class="trash-item-code">${escapeHtml(subj.code)}</span>` : ''}
                     </div>
                     <div class="trash-item-meta">
                         <span>Deleted: ${new Date(subj.deletedAt || Date.now()).toLocaleDateString()}</span>
