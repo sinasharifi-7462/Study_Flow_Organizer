@@ -23,8 +23,8 @@ if %errorlevel% neq 0 (
 echo [1/2] Compiling Windows icon resource...
 where windres >nul 2>nul
 if %errorlevel% equ 0 (
-    windres -i scripts/app.rc -o scripts/app.res -I .
-    set RES_PARAM=scripts/app.res
+    windres -i scripts/app.rc -o scripts/app.o -O coff -I .
+    set RES_PARAM=scripts/app.o
 ) else (
     echo [INFO] windres not found, compiling without embedded resource...
     set RES_PARAM=

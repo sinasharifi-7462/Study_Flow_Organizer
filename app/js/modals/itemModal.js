@@ -20,15 +20,10 @@ let subjectSelect = null;
 let datePicker = null;
 let timePicker = null;
 
-export function openItemModal(itemId = null, preselectedSubjectId = null, defaultKind = 'task', initialDueDate = null) {
+export function openItemModal(itemId = null, preselectedSubjectId = null, defaultKind = 'task', initialDueDate = null, forceDeadlineless = false) {
     mountModalHtml('itemModal', ITEM_MODAL_HTML);
     const modal = document.getElementById('itemModal');
     if (!modal) return;
-
-    if (AppState.subjects.length === 0) {
-        showToast({ message: "Please create a course subject before adding tasks or events.", type: 'warning' });
-        return;
-    }
 
     activeItemId = itemId;
     activeKind = defaultKind;
@@ -37,16 +32,21 @@ export function openItemModal(itemId = null, preselectedSubjectId = null, defaul
     const form = document.getElementById('itemForm');
     form.reset();
 
-    // Populate Subjects Custom Dropdown
-    const subjectOptions = AppState.subjects.map(s => ({
-        value: s.id,
-        label: s.title,
-        secondary: s.code || ''
-    }));
+    // Populate Subjects Custom Dropdown (Includes General / Free Task option)
+    const subjectOptions = [
+        { value: '', label: 'General / Free Task (No Course)' },
+        ...AppState.subjects.map(s => ({
+            value: s.id,
+            label: s.title
+        }))
+    ];
 
     if (subjectSelect) {
         subjectSelect.setOptions(subjectOptions);
     }
+
+    const noDeadlineCheck = document.getElementById('itemNoDeadlineCheck');
+    const pickersBox = document.getElementById('itemModalPickersBox');
 
     if (itemId) {
         const item = AppState.items.find(i => i.id === itemId);
@@ -55,34 +55,62 @@ export function openItemModal(itemId = null, preselectedSubjectId = null, defaul
             activeKind = item.kind;
             activeTypeId = item.typeId;
 
+            const targetSubj = item.subjectId || '';
             if (subjectSelect) {
-                subjectSelect.setValue(item.subjectId, false);
+                subjectSelect.setValue(targetSubj, false);
             }
-            document.getElementById('itemSubjectSelect').value = item.subjectId;
+            document.getElementById('itemSubjectSelect').value = targetSubj;
             document.getElementById('itemTitleInput').value = item.title;
             document.getElementById('taskDetailNumber').value = item.extraInfo?.number || '';
             document.getElementById('eventDetailNumber').value = item.extraInfo?.number || '';
             document.getElementById('eventLocationInput').value = item.extraInfo?.location || '';
             document.getElementById('itemNotesInput').value = item.extraInfo?.notes || '';
 
-            const d = new Date(item.dueDate);
-            if (datePicker) datePicker.setDate(d, false);
-            if (timePicker) timePicker.setTime(d.getHours(), d.getMinutes(), false);
-            document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.remove('active'));
+            if (!item.dueDate) {
+                if (noDeadlineCheck) noDeadlineCheck.checked = true;
+                if (pickersBox) pickersBox.classList.add('is-deadlineless');
+                document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.toggle('active', b.dataset.preset === 'none'));
+            } else {
+                if (noDeadlineCheck) noDeadlineCheck.checked = false;
+                if (pickersBox) pickersBox.classList.remove('is-deadlineless');
+                const d = new Date(item.dueDate);
+                if (datePicker) datePicker.setDate(d, false);
+                if (timePicker) timePicker.setTime(d.getHours(), d.getMinutes(), false);
+                document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.remove('active'));
+            }
         }
     } else {
         modalTitle.textContent = defaultKind === 'task' ? 'Add Task' : 'Add Event';
-        const targetSubjId = preselectedSubjectId || AppState.subjects[0]?.id;
+        let targetSubjId = '';
+        if (preselectedSubjectId && preselectedSubjectId !== 'general') {
+            targetSubjId = preselectedSubjectId;
+        } else if (preselectedSubjectId === 'general') {
+            targetSubjId = '';
+        } else if (AppState.subjects.length > 0) {
+            targetSubjId = AppState.subjects[0]?.id || '';
+        } else {
+            targetSubjId = '';
+        }
+
         if (subjectSelect) {
             subjectSelect.setValue(targetSubjId, false);
         }
         document.getElementById('itemSubjectSelect').value = targetSubjId;
 
-        // Default: Tomorrow at 23:59
-        const tomorrow = initialDueDate ? new Date(initialDueDate) : getDatePreset(1, 23, 59);
-        if (datePicker) datePicker.setDate(tomorrow, false);
-        if (timePicker) timePicker.setTime(tomorrow.getHours() || 23, tomorrow.getMinutes() || 59, false);
-        document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.toggle('active', b.dataset.preset === 'tomorrow'));
+        const shouldBeDeadlineless = forceDeadlineless || (!initialDueDate && (preselectedSubjectId === null || preselectedSubjectId === 'general') && AppState.subjects.length === 0);
+
+        if (shouldBeDeadlineless) {
+            if (noDeadlineCheck) noDeadlineCheck.checked = true;
+            if (pickersBox) pickersBox.classList.add('is-deadlineless');
+            document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.toggle('active', b.dataset.preset === 'none'));
+        } else {
+            if (noDeadlineCheck) noDeadlineCheck.checked = false;
+            if (pickersBox) pickersBox.classList.remove('is-deadlineless');
+            const targetDate = initialDueDate ? new Date(initialDueDate) : getDatePreset(1, 23, 59);
+            if (datePicker) datePicker.setDate(targetDate, false);
+            if (timePicker) timePicker.setTime(targetDate.getHours() || 23, targetDate.getMinutes() || 59, false);
+            document.querySelectorAll('.date-preset-chip').forEach(b => b.classList.toggle('active', b.dataset.preset === (initialDueDate ? '' : 'tomorrow')));
+        }
     }
 
     setKind(activeKind);
@@ -196,8 +224,33 @@ export function initItemModalEvents() {
         });
     }
 
-    // 4. Quick Date Preset Chips (1-Click deadline selection)
+    // 4. Quick Date Preset Chips & No Deadline Toggle
+    const noDeadlineCheck = document.getElementById('itemNoDeadlineCheck');
+    const pickersBox = document.getElementById('itemModalPickersBox');
+
+    function setDeadlineless(isDeadlineless) {
+        if (noDeadlineCheck) noDeadlineCheck.checked = isDeadlineless;
+        if (pickersBox) pickersBox.classList.toggle('is-deadlineless', isDeadlineless);
+        document.querySelectorAll('.date-preset-chip').forEach(btn => {
+            if (isDeadlineless) {
+                btn.classList.toggle('active', btn.dataset.preset === 'none');
+            } else if (btn.dataset.preset === 'none') {
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    noDeadlineCheck?.addEventListener('change', (e) => {
+        setDeadlineless(e.target.checked);
+    });
+
     function applyDatePreset(presetKey) {
+        if (presetKey === 'none') {
+            setDeadlineless(true);
+            return;
+        }
+
+        setDeadlineless(false);
         const now = new Date();
         let target = new Date();
         if (presetKey === 'today') {
@@ -244,24 +297,24 @@ export function initItemModalEvents() {
     // Form submission
     document.getElementById('itemForm')?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const subjectId = subjectSelect ? subjectSelect.getValue() : document.getElementById('itemSubjectSelect').value;
+        const rawSubjId = subjectSelect ? subjectSelect.getValue() : document.getElementById('itemSubjectSelect').value;
+        const subjectId = rawSubjId && rawSubjId.trim() ? rawSubjId.trim() : null;
         const title = document.getElementById('itemTitleInput').value.trim();
-
-        if (!subjectId) {
-            showToast({ message: 'Please select a course subject', type: 'error' });
-            return;
-        }
 
         if (!title) {
             showToast({ message: 'Title is required', type: 'error' });
             return;
         }
 
-        const dateObj = datePicker ? datePicker.getDate() : new Date();
-        const { hours, minutes } = timePicker ? timePicker.getTime() : { hours: 23, minutes: 59 };
-        dateObj.setHours(hours, minutes, 0, 0);
+        const isDeadlineless = Boolean(document.getElementById('itemNoDeadlineCheck')?.checked);
+        let dueDate = null;
 
-        const dueDate = dateObj.toISOString();
+        if (!isDeadlineless) {
+            const dateObj = datePicker ? datePicker.getDate() : new Date();
+            const { hours, minutes } = timePicker ? timePicker.getTime() : { hours: 23, minutes: 59 };
+            dateObj.setHours(hours, minutes, 0, 0);
+            dueDate = dateObj.toISOString();
+        }
 
         const types = activeKind === 'task' ? AppState.config.taskTypes : AppState.config.eventTypes;
         const matchedType = types.find(t => t.id === activeTypeId) || types[0];

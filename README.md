@@ -1,15 +1,48 @@
-# 🎓 Study Flow Organizer v4.3
+# 🎓 Study Flow Organizer v4.4
 
-[![Version](https://img.shields.io/badge/Version-4.3.0-blue.svg)](https://github.com/sinasharifi-7462/Study_Flow_Organizer)
+[![Version](https://img.shields.io/badge/Version-4.4.0-blue.svg)](https://github.com/sinasharifi-7462/Study_Flow_Organizer)
 [![Architecture: Modular ES Modules](https://img.shields.io/badge/Architecture-Modular%20ES%20Modules-success.svg)](#)
 [![Zero NPM Runtime Dependencies](https://img.shields.io/badge/Dependencies-Zero%20NPM%20Modules-brightgreen.svg)](#)
 [![Dual Calendar: Gregorian & Jalali](https://img.shields.io/badge/Calendar-Gregorian%20%2B%20Shamsi-orange.svg)](#)
 [![AI Assistant: Local & Cloud](https://img.shields.io/badge/AI-Ollama%20%7C%20Gemini%20%7C%20DeepSeek-purple.svg)](#)
-[![Test Suite: Vitest](https://img.shields.io/badge/Tests-22%20Passed%20(Vitest)-brightgreen.svg)](#)
+[![Test Suite: Vitest](https://img.shields.io/badge/Tests-81%20Passed%20(Vitest)-brightgreen.svg)](#)
 [![Windows Explorer Integration](https://img.shields.io/badge/Windows-Native%20Folder%20Bridge-0078D4.svg)](#)
+[![Standalone Windows Binary](https://img.shields.io/badge/Binary-Native%20GUI%20(No%20Console)-blueviolet.svg)](#)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 An intelligent, privacy-first, 100% offline-capable academic workspace, deadline planner, and course materials hub. Built for university students, researchers, and self-directed learners who want complete control over their academic schedule with direct local disk persistence, native Windows File Explorer folder bridges, ambient voice-driven AI planning, and a distraction-free keyboard-first workflow.
+
+---
+
+## 🌟 What's New in v4.4
+
+* **📁 Native Course Folder Explorer Hub**:
+  * Direct 1-click launch to open any linked course folder in **Windows File Explorer** via safe server integration (`/api/open-folder`).
+  * Built-in native Windows folder picker dialog (`/api/browse-folder`) and instant path validation (`/api/verify-path`).
+  * Quick folder linking from course cards, folder badges, and the Desktop Command Palette (`act_new_folder`).
+* **📝 Free To-Dos & Deadlineless Items**:
+  * **Standalone Free Tasks**: Completely decoupled from courses (`courseId: null` / *General*)—create quick daily tasks directly from the top menu or Command Palette (`act_new_free_task`).
+  * **Deadlineless Tasks & Events**: First-class support for items without due dates across Cards, Kanban, Timeline, and Calendar with clean `"No deadline"` badges and resilient urgency sorting.
+* **📅 Primary Shamsi (Jalali) Calendar & Reciprocal Dual-Date Hover Engine**:
+  * Seamless 1-click toggle between Gregorian and Jalali as your primary full-grid calendar display.
+  * Interactive dual-date hover tooltips: hovering over any day reveals its reciprocal astronomical equivalent (Gregorian in Shamsi mode, Shamsi in Gregorian mode).
+* **⏱️ Proportional Timeline Enhancements**:
+  * **Floating "Jump to Today / Now" Button**: Automatically scrolls and centers on active milestones and current date markers.
+  * **Collapsible Past Events Filter**: 1-click history toggle with dedicated icon to fold away completed past deadlines.
+* **🤖 Resilient AI Assistant with Multi-Model Fallback Chain**:
+  * Automatic multi-hop failover across Google Gemini (`gemini-3.5-flash-lite`, `gemini-3-flash-preview`, `gemini-3.5-flash`, etc.) and OpenAI (`gpt-4o-mini`, `gpt-4o`, `gpt-3.5-turbo`) priority chains when encountering transient network timeouts, `503 High Demand`, or `429 Quota Exceeded`.
+  * Preserves base64 voice recordings during model failovers so dictated instructions succeed without re-recording.
+  * Visual fallback badge chain rendered in the 2x2 Settings Hub.
+  * Robust `extractJsonFromText` parses JSON cleanly across markdown fences and conversational preambles.
+* **🎨 UI/UX Polish & Modernized Controls**:
+  * Dynamically scaling control ribbon on window maximize.
+  * Clutter-free course titles with removed redundant code badges.
+  * Modernized vector SVG checkmark micro-interactions and refined Black & White theme contrast.
+* **📦 Branded Windows Standalone GUI Executable**:
+  * `npm run build:exe` embeds multi-resolution Windows ICO (`Study_Flow_Organizer.ico`) into runtime stubs using `caxa` + `rcedit`.
+  * Automatically patches the PE header to Subsystem 2 (`IMAGE_SUBSYSTEM_WINDOWS_GUI`), completely eliminating the black terminal window on startup.
+* **🧪 Expanded Vitest Suite (81 Tests across 8 Suites)**:
+  * Comprehensive test suites verifying folder validation, standalone tasks, deadlineless normalization, AI failover chains, and UI date mechanics.
 
 ---
 
@@ -158,7 +191,11 @@ Study_Flow_Organizer/
 │   ├── dateUtils.test.js             # Tests for remaining time, urgency, and natural language parser
 │   ├── theme.test.js                 # Tests for WCAG contrast ratios, luminance, and palette presets
 │   ├── state.test.js                 # Tests for schema normalization, soft-delete, and item mutations
-│   └── filtering.test.js             # Tests for view-aware filters, topic tags, and search queries
+│   ├── filtering.test.js             # Tests for view-aware filters, topic tags, and search queries
+│   ├── folders.test.js               # Tests for folder linking, path validation, and explorer launch
+│   ├── freeTodoAndDeadlineless.test.js # Tests for standalone tasks and deadlineless items
+│   ├── aiFallback.test.js            # Tests for multi-model failover, JSON extraction, and audio safety
+│   └── features.test.js              # Tests for Shamsi conversion, timeline jumps, and UI enhancements
 │
 ├── data/                             # Academic Database & Backups
 │   ├── study_flow_data.json          # Active repository database (clean starter state)
@@ -240,7 +277,11 @@ npm test
 npm run test:watch
 ```
 
-### Test Coverage Highlights:
+### Test Coverage Highlights (81 Tests across 8 Suites):
+* **`test/folders.test.js`**: Validates native folder linking, path sanitization, Windows File Explorer spawn security, and materials collection schemas.
+* **`test/freeTodoAndDeadlineless.test.js`**: Validates standalone tasks (`courseId: null`), deadlineless task and event lifecycle, view filtering, and sorting resilience.
+* **`test/aiFallback.test.js`**: Validates server & client multi-hop fallback chains, Google Gemini & OpenAI failover sequences, JSON code fence extraction, and base64 voice preservation.
+* **`test/features.test.js`**: Validates primary Shamsi calendar mode, reciprocal dual-date hover conversions, timeline floating jump mechanics, past event filtering, and B&W theme styling.
 * **`test/theme.test.js`**: Validates mathematical WCAG 2.1 contrast compliance ($\ge 4.5:1$), relative luminance calculations, 5 master palette definitions, and dynamic gradient generation.
 * **`test/dateUtils.test.js`**: Validates urgency classification, overdue detection, chronological sorting, and natural language quick-task parsing.
 * **`test/state.test.js`**: Validates data schema migration, normalization, soft-delete trash arrays, and immutability.
